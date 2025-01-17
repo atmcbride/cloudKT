@@ -1,0 +1,28 @@
+{
+    "_COMMENT": "code specifications for loading in stellar/ISM data",
+    "INPUT_DATA_MODULE": "data_in",
+    "STAR_LOADER": "clean_star_data",
+    "STAR_LOADER_PARAMETERS": {
+      "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
+      "META_FILE": "CA_meta.fits"
+    },
+    "DUSTMAP_LOADER": "DustData",
+    "DUSTMAP_FILE": "/uufs/astro.utah.edu/common/home/u1371365/DIB_KT_CACloud/edenhofer_out.h5",
+
+    "_COMMENT": "specify functions to divvy up stars to populate sightlines",
+    "STAR_SELECTION_MODULE": "star_selection",
+    "STAR_SELECTION": "assign_stars",
+    "STAR_SELECTION_PARAMETERS":{
+      "nstar": 25
+    },
+
+    "_COMMENT": "specify the sightline object to be used",
+    "SIGHTLINE_MODULE": "sightline",
+    "SIGHTLINE_OBJECT": "Sightline",
+    "SIGHTLINE_PARAMETERS":{
+      "PROCESS_DATA": "process_data"
+    },
+
+    "_COMMENT": "specify the code and parameters to set up and run MCMC",
+    "MCMC_INITIALIZATION": "initialize_MCMC"
+  }
