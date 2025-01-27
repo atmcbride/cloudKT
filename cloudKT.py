@@ -31,8 +31,6 @@ def main():
     dust_data.load_map()
     print(dust_data)
 
-
-
     # load the sightline module
     print('--- Loading sightline module ---')
     sightline_module = load_module(config['SIGHTLINE_MODULE'])
