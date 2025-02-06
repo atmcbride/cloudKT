@@ -39,4 +39,4 @@ def clean_star_data(parameters):
     return meta_tab
 
 def assign_stars(parameters):
-    
+    return
