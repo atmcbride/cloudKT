@@ -1,4 +1,9 @@
 {
+    "LOGGING": {
+        "LOG_LEVEL": "DEBUG",
+        "LOG_FILE": "cloudKT.log"
+    },
+
     "_COMMENT": "code specifications for loading in stellar/ISM data",
     "INPUT_DATA_MODULE": "data_in",
     "STAR_LOADER": "clean_star_data",
