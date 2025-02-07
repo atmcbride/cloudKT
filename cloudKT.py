@@ -1,9 +1,12 @@
 import argparse
-import importlib
 import json
 import os
 import sys
 import logging
+
+from utilities import load_module, load_json, merge_configs#, logger_setup
+
+logger = logging.getLogger(__name__)
 
 def main():
     # Parse the command line arguments
@@ -11,6 +14,8 @@ def main():
     program_directory = args.directory
     config_file = args.config
     default_file = args.default
+
+    logger_setup(program_directory + '/cloudKT.log')
 
     # Load the configuration file to get projects
     if os.path.exists(program_directory + '/' + config_file + '.json'):
@@ -24,34 +29,23 @@ def main():
         pipeline(config)
 
 def pipeline(config):
+    logger.info('Running pipeline...')
+    logger.info('--- Loading Data ---')
+    load_data = load_module('load_data')
+    stars, dust, emission_CO, emission_HI = load_data.load_data(config['LOAD_DATA_PARAMETERS'])
 
-    print("--- Loading Data ---")
-    load_data = load_module(config['INPUT_DATA_MODULE'])
-    print('Loading star data...')
-    load_stars = getattr(load_data, config['STAR_LOADER'])
-    star_data = load_stars(config['STAR_LOADER_PARAMETERS'])
-
-    print('Loading dust data...')
-    dust_loader = getattr(load_data, config['DUSTMAP_LOADER'])
-    dust_data = dust_loader(map_fname = config['DUSTMAP_FILE'])
-
-
-
-    dust_data.load_map()
-    print(dust_data)
 
     # load the sightline module
-    print('--- Loading sightline module ---')
+    logger.info('--- Loading sightline module ---')
     sightline_module = load_module(config['SIGHTLINE_MODULE'])
     Sightline = getattr(sightline_module, config['SIGHTLINE_OBJECT'])
-    print(Sightline)
-    print('Populating sightlines...')
+    logger.info('Populating sightlines...')
 
-    print('--- Loading Model ---')
-    print('Loading MCMC module...')
+    logger.info('--- Loading Model ---')
+    logger.info('Loading MCMC module...')
 
-    print('--- Running Model ---')
-    print('Running MCMC...')
+    logger.info('--- Running Model ---')
+    logger.info('Running MCMC...')
 
     # Load in dust data
     # FILE: Load in stellar data, apply selections to assign to sightlines
@@ -67,20 +61,22 @@ def parse_args():
     parser.add_argument('--run_pipeline', type =str, help ='Run pipeline', default='true')
     return parser.parse_args()
 
-def load_json(json_path, **kwargs):
-    # Load the configuration file.
-    with open(json_path, 'r') as f:
-        return json.load(f)
-    
-def merge_configs(user, default):
-    # Merge user configuration with defaults.
-    merged = default.copy()
-    merged.update(user)
-    return merged
+def logger_setup(log_file, level = logging.DEBUG):
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    fhandler = logging.FileHandler(log_file, mode='w')    
+    fhandler.setLevel(logging.INFO)
+    fformatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
+    fhandler.setFormatter(fformatter)
 
-def load_module(module_name):
-    # Load the module
-    return importlib.import_module(module_name)
+    shandler = logging.StreamHandler()
+    shandler.setLevel(logging.INFO)
+    sformatter = logging.Formatter('%(asctime)s - %(message)s')
+    shandler.setFormatter(sformatter)
+    
+    logger.addHandler(shandler)
+    logger.addHandler(fhandler)
+
 
 if __name__ == '__main__':
     main()
