@@ -29,6 +29,7 @@ def load_data(parameters):
     # dust_loader_module = load_module(parameters['DUST_LOAD_MODULE'])
     # dust_loader = getattr(dust_loader_module, parameters['DUST_LOAD_METHOD'])
     dust_data = load_dust(parameters['LOAD_DUST_PARAMETERS'])
+    dust_data.load_map()
     dust_extent = (dust_data.l.min(), dust_data.l.max(), dust_data.b.min(), dust_data.b.max())
 
     logger.info('Loading CO emission data...')

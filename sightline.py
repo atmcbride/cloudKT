@@ -6,6 +6,7 @@ import astropy.units as u
 from residual_process import reprocess
 
 from scipy.signal import correlate, correlation_lags
+from scipy.optimize import curve_fit
 
 
 lambda0 = 15272.42
@@ -331,12 +332,12 @@ class ForegroundModifiedSightline(Sightline):
         return signals
     
 
-class ForegroundModifiedSightline(ForegroundModifiedSightline):
+class ForegroundModifiedSightline_v2(ForegroundModifiedSightline):
     def __init__(self, input_table, cube_CO, distEW_vector = (0.05, 0.05), coords = None, dAVdd = None, dfore = 400, **kwargs):
         # self.all_stars = stars
 
-        table_filament = self.selectOnFilamentCO(input_table, cube_CO)
-        stars = self.selectOnEW(table_filament, distEW_vector)
+        table_filament = input_table[self.selectOnFilamentCO(input_table, cube_CO)]
+        stars = table_filament[self.selectOnEW(table_filament, distEW_vector)]
         self.stars = stars[(stars['DIST'] > dfore) & (stars['DIST'] < 650)]
         dist = self.stars['DIST']
 
@@ -356,6 +357,27 @@ class ForegroundModifiedSightline(ForegroundModifiedSightline):
 
         self.test_init_signals = self.model_signals_fg(self.rvelo, self.dAVdd)
 
+    def get_DIBs(self, MADGICS = False, **kwargs):
+        signals = np.zeros((len(self.stars), len(wavs_window)))
+        signal_errs = np.zeros((len(self.stars), len(wavs_window)))
+        dAVdd = np.zeros((len(self.stars), len(self.bins)-1))
+        dAVdd_all = np.zeros((len(self.stars), len(self.bins)-1))
+        dAVdd_mask =np.zeros((len(self.stars), len(self.bins)-1)).astype(bool)
+
+        
+        for i in range(len(self.stars)):
+            star = self.stars[i]
+            star_rv = star['VHELIO_AVG']
+            aspcap = fits.open(getASPCAP(star))
+            apstar = fits.open(getapStar(aspcap))
+            medres = fits.open(get_medres(star['TEFF'], star['LOGG'], star['M_H']))
+            sig, err = self.generateClippedResidual(aspcap, medres, apstar, star_rv, **kwargs)
+            signals[i, :], signal_errs[i, :] = sig[window], err[window]
+
+            
+            l, b = star['GLON'], star['GLAT']
+            dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = dAV_dd_array(l, b, self.bins, star['DIST'], **kwargs)
+
     @staticmethod
     def selectOnFilamentCO(tab, cube_CO, threshold = 0.03):
         b_CO, l_CO = cube_CO.world[0, :, :][1:]
@@ -371,7 +393,7 @@ class ForegroundModifiedSightline(ForegroundModifiedSightline):
             for j in range(cube_CO.shape[2]):
                 correlation_image[i, j] = correlate(cube_CO.unmasked_data[:, i, j] / np.nansum(np.abs(cube_CO.unmasked_data[:, i, j])), reference_point / np.nansum(np.abs(reference_point)))[zpoint]
         stars_CO_correlation = correlation_image[CO_star_indices[:, 0], CO_star_indices[:, 1]]
-        return tab[stars_CO_correlation > threshold]
+        return stars_CO_correlation > threshold
 
 
     @staticmethod
@@ -419,3 +441,114 @@ class ForegroundModifiedSightline(ForegroundModifiedSightline):
                     select_below = False
 
         return selection 
+    
+    @staticmethod
+    def generateClippedResidual(aspcap, medres, apstar, rv, k = 3):
+        dibfn = lambda x, mu, sigma, a: 1-a * np.exp(-0.5 * (x - mu)**2 / sigma**2)
+        def sigma_clip_mask(y, x = wavs, k = 2.5):
+            y_over_gauss = None
+
+            try:
+                gaussfit = curve_fit(dibfn, x[window], y[window].filled(np.nan), p0 = (15272, 1.2, 0.05), bounds = ([15269, 0.5, 0], [15275, 2, 0.15]), check_finite = False, nan_policy = 'omit')
+
+            except:
+                # gaussfit = ((15272, 1.2, 0.05),())
+                print('fail')
+                return None, None
+            #     y_over_gauss = None
+            #     gaussfit = ((15272, 1.2, 0.05),())
+            #     # fit = dibfn(x, 15272.42, 1.2, 0.05)
+            #     # y_over_gauss = y / fit
+            #     print('POOR GAUSS FIT IN SIGMA CLIP')
+            y_over_gauss = y / dibfn(x, *gaussfit[0])
+
+            med = np.nanmedian(y_over_gauss[window])
+            stdev = np.std(y_over_gauss[window], ddof = 1)
+            mask = np.abs(y_over_gauss - med) > k * stdev
+            mask = mask + np.roll(mask, -1) + np.roll(mask, -1)
+            mask = mask.astype(bool)
+            return mask, stdev
+
+        def sigmaClip(y, yerr,k=2.5):
+            clip = True
+            clip_iters = 0
+            std = np.nanstd(y[window], ddof = 1)
+            mask = np.zeros(y.shape).astype(bool)
+            clip_success = True
+
+            while clip:
+                clip_mask, std_clipped = sigma_clip_mask(np.ma.array(y, mask = mask.copy()), k = k)
+                if clip_mask is None:
+                    clip_success = False
+                    return mask, clip_success
+                clip_mask = clip_mask.filled(False)
+
+                if std - std_clipped  < 1e-4:
+                    clip = False
+
+
+                else:
+                    clip_iters += 1
+                    std = std_clipped
+                    mask = mask + clip_mask
+
+            return mask, clip_success
+
+        spectrum = aspcap[1].data
+        model = aspcap[3].data
+        err = aspcap[2].data
+        bitmask = apstar[3].data[0, :]
+
+        if medres[1].data is None:
+            medres_model = np.ones(spectrum.shape)
+            medres_err =np.zeros(spectrum.shape)
+        else:
+            medres_model = np.array(medres[1].data)
+            medres_err = np.array(medres[3].data)
+
+
+
+        mask_digits = [0, 1, 2, 9, 12, 13] # 0 BADPIX, 1 CRPIX, 2 SATPIX, 9 PERSIST_HIGH, 12 SIG_SKYLINE, 13 SIG_TELLURIC
+        mask = np.zeros(bitmask.shape)
+        for digit in mask_digits:
+            mask = mask + np.bitwise_and(bitmask.astype(int), 2**digit) 
+
+        mask = mask.astype(bool)
+        res_corr = spectrum / model / medres_model
+        # print('res corr shape', res_corr.shape)
+        uncertainty_corr = np.sqrt(err**2) #+ medres_err**2)
+
+        sky_residuals = [(15268.1, 1),(15274.1, 1),(15275.9, 1)]
+        manual_masks = np.zeros(len(wavs))
+        for sky in sky_residuals:
+            wl = sky[0]
+            manual_masks[np.argmin(np.abs(wavs - wl))] = True
+        manual_masks = manual_masks + np.roll(manual_masks, -1) + np.roll(manual_masks, 1)
+
+        # mask_sigmaclip = np.zeros(len(wavs))
+
+
+        maskSigClip, clip_success = sigmaClip(res_corr, uncertainty_corr, k = k)
+
+        mask = mask + maskSigClip
+        mask = mask.astype(bool)
+
+        res_corr_ma = np.ma.array(res_corr, mask = mask)
+        res_corr_filled = res_corr_ma.filled(np.nan)
+
+        res_corr_resamp = resample_interp(res_corr_filled, rv)
+        uncertainty_corr_resamp = resample_interp(uncertainty_corr, rv)
+
+        sky_residuals = [(15268.1, 1),(15274.1, 1),(15275.9, 1)]
+        manual_masks = np.zeros(len(wavs))
+        for sky in sky_residuals:
+            wl = sky[0]
+            manual_masks[np.argmin(np.abs(wavs - wl))] = True
+        manual_masks = manual_masks + np.roll(manual_masks, -1) + np.roll(manual_masks, 1)
+
+
+        res_corr_resamp = np.ma.array(res_corr_resamp, mask = manual_masks)
+        res_corr_resamp = res_corr_resamp.filled(np.nan)
+
+
+        return res_corr_resamp, uncertainty_corr_resamp#, clip_success
