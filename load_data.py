@@ -29,7 +29,6 @@ def load_data(parameters):
     # dust_loader_module = load_module(parameters['DUST_LOAD_MODULE'])
     # dust_loader = getattr(dust_loader_module, parameters['DUST_LOAD_METHOD'])
     dust_data = load_dust(parameters['LOAD_DUST_PARAMETERS'])
-    dust_data.load_map()
     dust_extent = (dust_data.l.min(), dust_data.l.max(), dust_data.b.min(), dust_data.b.max())
 
     logger.info('Loading CO emission data...')
@@ -62,8 +61,9 @@ def load_dust(parameters):
     """
     load an instance of the dust data object
     """
-
-    return DustData()
+    dust_data = DustData()
+    dust_data.load_map()
+    return dust_data
 
 
 
@@ -102,15 +102,20 @@ class DustData:
     def dustmap_grid(self, **kwargs):
         self.distance = np.linspace(0, 800, 800)
         self.l0, self.b0 = (163., -8.0)
-        self.l_ = np.linspace(self.l0 - 9., self.l0 + 9., 800)
-        self.b_ = np.linspace(self.b0 - 9., self.b0 + 9., 800)
-        self.l, self.b, self.d = np.meshgrid(self.l_, self.b_, self.distance) 
+        self.l_1d = np.linspace(self.l0 - 9., self.l0 + 9., 800)
+        self.b_1d = np.linspace(self.b0 - 9., self.b0 + 9., 800)
+        self.l, self.b, self.d = np.meshgrid(self.l_1d, self.b_1d, self.distance) 
     def load_map(self, map_fname = '/uufs/astro.utah.edu/common/home/u1371365/DIB_KT_CACloud/edenhofer_out.h5', **kwargs):
         with h5py.File(map_fname, 'r') as f:
             edenhofer = np.array(f['data'])
         self.dustmap = edenhofer
     def intake_map(self, map_array):
         self.dustmap = map_array
+    def find_nearest_angular(self, ll, bb):
+        l_ind, b_ind = (np.argmin(np.abs(self.l_1d - ll)), np.argmin(np.abs(self.b_1d - bb)))
+        return l_ind, b_ind
+    def find_nearest_distance(self, d):
+        return np.argmin(np.abs(self.distance[:, np.newaxis] - d), axis = 0)
 
 
 

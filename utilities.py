@@ -1,6 +1,5 @@
 import importlib
 import json
-import logging
 
 def load_module(module_name):
     # Load the module

@@ -31,8 +31,9 @@ def main():
 def pipeline(config):
     logger.info('Running pipeline...')
     logger.info('--- Loading Data ---')
-    load_data = load_module('load_data')
-    stars, dust, emission_CO, emission_HI = load_data.load_data(config['LOAD_DATA_PARAMETERS'])
+    load_data_module = load_module(config['LOAD_DATA_MODULE'])
+    load_data = getattr(load_data_module, config['LOAD_DATA_METHOD'])
+    stars, dust, emission_CO, emission_HI = load_data(config['LOAD_DATA_PARAMETERS'])
 
 
     # load the sightline module

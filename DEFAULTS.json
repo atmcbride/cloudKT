@@ -1,33 +1,39 @@
 {
-    "LOGGING": {
-        "LOG_LEVEL": "DEBUG",
-        "LOG_FILE": "cloudKT.log"
-    },
+  "STAR_METADATA": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/CA_meta_LSR_uncerts.fits",
+  "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
+  "CO_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/DHT21_Taurus_interp.fits",
 
-    "_COMMENT": "code specifications for loading in stellar/ISM data",
-    "INPUT_DATA_MODULE": "data_in",
-    "STAR_LOADER": "clean_star_data",
-    "STAR_LOADER_PARAMETERS": {
-      "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
-      "META_FILE": "CA_meta.fits"
-    },
-    "DUSTMAP_LOADER": "DustData",
-    "DUSTMAP_FILE": "/uufs/astro.utah.edu/common/home/u1371365/DIB_KT_CACloud/edenhofer_out.h5",
+  "_COMMENT": "Specify methods and their parameters to load data",
+  "LOAD_DATA_MODULE": "load_data",
+  "LOAD_DATA_METHOD": "load_data",
+  "LOAD_DATA_PARAMETERS": {
+      "LOAD_STARS_METHOD": "load_stars",
+      "LOAD_STARS_PARAMETERS": {
+          "STAR_METADATA": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/CA_meta_LSR_uncerts.fits",
+          "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
+          "RESTRICTIONS": [{"SNR": [80, ">"], "TEFF": [5000, ">"]}, {"SNR": [150, ">"]},
+                          {"ASPCAP_CHI2_1": [1, ">"], "ASPCAP_CHI2_1": [1, "<"]}]},
+      "LOAD_DUST_METHOD": "load_dust",
+      "LOAD_DUST_PARAMETERS": {},
+      "LOAD_CO_METHOD": "load_CO",
+      "LOAD_CO_PARAMETERS": {
+          "CO_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/catalogs/DHT21_Taurus_interp.fits"},
+      "LOAD_HI_METHOD": "load_HI",
+          "LOAD_HI_PARAMETERS": {
+              "HI_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/catalogs/HI4PI_CAR.fits"}
+          },
 
-    "_COMMENT": "specify functions to divvy up stars to populate sightlines",
-    "STAR_SELECTION_MODULE": "star_selection",
-    "STAR_SELECTION": "assign_stars",
-    "STAR_SELECTION_PARAMETERS":{
-      "nstar": 25
-    },
 
-    "_COMMENT": "specify the sightline object to be used",
-    "SIGHTLINE_MODULE": "sightline",
-    "SIGHTLINE_OBJECT": "Sightline",
-    "SIGHTLINE_PARAMETERS":{
-      "PROCESS_DATA": "process_data"
-    },
+  "_COMMENT": "specify functions to divvy up stars to populate sightlines",
+  "STAR_SELECTION_MODULE": "star_selection_metrics",
+  "STAR_SELECTION": "selectOnEW",
+  "STAR_SELECTION_PARAMETERS":{
+  "vector":[0.05, 0.05]
+  },
 
-    "_COMMENT": "specify the code and parameters to set up and run MCMC",
-    "MCMC_INITIALIZATION": "initialize_MCMC"
+  "SIGHTLINE_MODULE": "sightline",
+  "SIGHTLINE_OBJECT": "ForegroundModifiedSightline_v2",
+  "SIGHTLINE_PARAMETERS":{
+  "PROCESS_DATA": "process_data"
   }
+}
