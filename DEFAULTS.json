@@ -31,8 +31,8 @@
   "vector":[0.05, 0.05]
   },
 
-  "SIGHTLINE_MODULE": "sightline",
-  "SIGHTLINE_OBJECT": "ForegroundModifiedSightline_v2",
+  "SIGHTLINE_MODULE": "sightline_model.sightline",
+  "SIGHTLINE_OBJECT": "Sightline",
   "SIGHTLINE_PARAMETERS":{
   "PROCESS_DATA": "process_data"
   }

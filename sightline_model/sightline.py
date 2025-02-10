@@ -1,7 +1,13 @@
-### Created 2025-02-08 by a. mcbrideß
+### Created 2025-02-08 by a. mcbride
 import numpy as np
+import astropy.units as u
+import astropy.constants as c
+from astropy.io import fits
 
 from base_model import BaseModel
+
+lambda0 = 15272.42
+sigma0 = 1.15
 
 class Sightline(BaseModel):
     """
@@ -107,10 +113,10 @@ class Sightline(BaseModel):
         # print('dAVdd shape: ', dAVdd.shape)
         # dAVdd[self.dAVdd_mask] = 0
         signals = np.zeros((len(self.stars), len(wavs_window)))
-        peak_wavelength = dopplershift(rvelo)
+        peak_wavelength = self.dopplershift(rvelo)
         wavs_grid = np.tile(wavs_window, (len(self.bins) - 1, 1))
         voxel_DIB_unscaled = np.exp(-(wavs_grid - peak_wavelength[:, np.newaxis])**2 / (2 * sigma0**2))
-        amp = differentialAmplitude(dAVdd, binsep)
+        amp = self.differentialAmplitude(dAVdd, binsep)
 
         def single_signal(amp, bindex):
             amp[bindex :] = 0 # THIS MIGHT NEED TO BE -1
@@ -126,7 +132,7 @@ class Sightline(BaseModel):
             star = self.stars[i]
             dAVdd_star = dAVdd[i, :]
             # amp = Differential_Amplitude(dAVdd_star, self.bins[1:]-self.bins[:-1])
-            amp = differentialAmplitude(dAVdd_star, 1)
+            amp = self.differentialAmplitude(dAVdd_star, 1)
 
             bin_index = self.bin_inds[i]
             # signals[i, :] = single_signal(bin_index)

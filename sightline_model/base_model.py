@@ -6,16 +6,19 @@ class BaseModel():
     """
     Base class for models. Not for use on its own.
     """
-    def __init__(self):
-        pass
-    
+
     @staticmethod
     def select_near_point(tab, l, b, radius=1):
+        """
+        Selects stars within a specified radius of a position in l and b
+        """
         cond = np.sqrt((tab['GLON'] - l)**2 + (tab['GLAT'] - b)**2) < radius
         return np.where(cond)[0]
     
     @staticmethod
     def differentialAmplitude(dAV_dd, dd=1.0):
+        """
+        Converts a dAV_dd value to a dAMP(DIB)_dd value."""
         if type(dd) == float:
             return  0.024 * dAV_dd * dd  
         elif dd.shape == dAV_dd.shape:
@@ -25,6 +28,9 @@ class BaseModel():
 
     @staticmethod
     def generate_dAV_dd_array(l, b, star_dist, distance_bins, dustdata):
+        """
+        Generates a dAV_dd array for a given stellar position, distance bin boundaries, and dust map.
+        """
         distance = dustdata.distance
         dustmap = dustdata.dustmap
         l_ind, b_ind = dustdata.find_nearest_angular(l, b)
@@ -46,14 +52,12 @@ class BaseModel():
 
         dAVdd_mask = (dAVdd == 0).astype(bool)
         return dAVdd, dAVdd_all, dAVdd_mask
-    
-    @staticmethod
-    def dopplershift():
-
-        pass
 
     @staticmethod
     def get_wavs(hdulist = None, rv = 0):
+        """
+        Utility function for setting a wavelength array from a header or default values.
+        """
         if hdulist is None:
             CRVAL1 = 4.179
             CDELT1 = 6e-06
@@ -70,7 +74,17 @@ class BaseModel():
 
     @staticmethod
     def resample_interp(self, data, rv, hdu_sel = None):
+        """
+        Utility function for re-sampling spectra to a new RV frame"""
         wavs_rv = self.get_wavs(rv = rv, hdulist = hdu_sel)
-        interp = interp1d(wavs_rv, data, kind = 'slinear', bounds_error = False)s
+        interp = interp1d(wavs_rv, data, kind = 'slinear', bounds_error = False)
         data_interp = interp(self.get_wavs(rv=0, hdulist = hdu_sel))
         return data_interp
+    
+    @staticmethod
+    def dopplershift(v, lambda0 = 15272.42):
+        """
+        Takes a velocity in km/s, and a wavelength (default lambda0 of the 15272A DIB) 
+        returns the doppler-shifted wavelength in Angstroms
+        """
+        return lambda0 * (1 + v / 3e5)

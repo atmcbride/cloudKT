@@ -2,6 +2,11 @@ import numpy as np
 import h5py
 
 class DustData: 
+    """
+    Class for handling dustmap data for the CA cloud
+    Added 2025-02-08: this class now contains functions for finding the nearest dustmap coordinate 
+    index for a specified (l, b) or distance
+    """
     def __init__(self, **kwargs):
         self.dustmap_grid(**kwargs)
 
@@ -15,7 +20,7 @@ class DustData:
         with h5py.File(map_fname, 'r') as f:
             edenhofer = np.array(f['data'])
         self.dustmap = edenhofer
-    def intake_map(self, map_array):
+    def intake_map(self, map_array): # probably not needed
         self.dustmap = map_array
     def find_nearest_angular(self, ll, bb):
         l_ind, b_ind = (np.argmin(np.abs(self.l_1d - ll)), np.argmin(np.abs(self.b_1d - bb)))

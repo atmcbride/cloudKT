@@ -21,7 +21,7 @@ def load_data(parameters):
     Load data from the specified modules and methods in the configuration.
     """
     
-    logger.info('Loading star metadata...')
+    logger.info('Loading star metadata...') 
     # star_loader_module = load_module(parameters['LOAD_STARS_MODULE'])
     # star_loader = getattr(star_loader_module, parameters['LOAD_STARS_METHOD'])
     stars_data = load_stars(parameters['LOAD_STARS_PARAMETERS'])
@@ -92,32 +92,6 @@ def load_emission(parameters, dust_extent, carrier = 'CO'):
         cube_CO = SpectralCube(data = hdul_CO[0].data, wcs = WCS(hdul_CO[0].header), header = hdul_CO[0].header)
         cube_CA = cube_CO.subcube(xlo = dust_extent[0]*u.deg, xhi = dust_extent[1]*u.deg, ylo = dust_extent[2]*u.deg, yhi = dust_extent[3]*u.deg).spectral_slab(-15 * u.km/u.s, 10 * u.km/u.s)
     return cube_CA
-
-
-
-# class DustData: 
-#     def __init__(self, **kwargs):
-#         self.dustmap_grid(**kwargs)
-#         # self.load_map()
-
-#     def dustmap_grid(self, **kwargs):
-#         self.distance = np.linspace(0, 800, 800)
-#         self.l0, self.b0 = (163., -8.0)
-#         self.l_1d = np.linspace(self.l0 - 9., self.l0 + 9., 800)
-#         self.b_1d = np.linspace(self.b0 - 9., self.b0 + 9., 800)
-#         self.l, self.b, self.d = np.meshgrid(self.l_1d, self.b_1d, self.distance) 
-#     def load_map(self, map_fname = '/uufs/astro.utah.edu/common/home/u1371365/DIB_KT_CACloud/edenhofer_out.h5', **kwargs):
-#         with h5py.File(map_fname, 'r') as f:
-#             edenhofer = np.array(f['data'])
-#         self.dustmap = edenhofer
-#     def intake_map(self, map_array):
-#         self.dustmap = map_array
-#     def find_nearest_angular(self, ll, bb):
-#         l_ind, b_ind = (np.argmin(np.abs(self.l_1d - ll)), np.argmin(np.abs(self.b_1d - bb)))
-#         return l_ind, b_ind
-#     def find_nearest_distance(self, d):
-#         return np.argmin(np.abs(self.distance[:, np.newaxis] - d), axis = 0)
-
 
 
 def apply_restrictions(tab, restrictions): # THIS WILL NOT PRESENTLY WORK DUE TO THE PRESENCE OF BOTH &s and |s in data_criteria. Think about this later.
