@@ -18,7 +18,8 @@ class BaseModel():
     @staticmethod
     def differentialAmplitude(dAV_dd, dd=1.0):
         """
-        Converts a dAV_dd value to a dAMP(DIB)_dd value."""
+        Converts a dAV_dd value to a dAMP(DIB)_dd value.
+        """
         if type(dd) == float:
             return  0.024 * dAV_dd * dd  
         elif dd.shape == dAV_dd.shape:
@@ -72,7 +73,7 @@ class BaseModel():
         wavs = wavs * (1 + rv / 3e5) # allows for shifting to observed frame from rest frame
         return wavs
 
-    @staticmethod
+    @staticmethod # ed8062ec98407386ebfbc66a7c615eb56ffcd1ea  729d96ac711661aad43b005c138efa4c096d20b1
     def resample_interp(self, data, rv, hdu_sel = None):
         """
         Utility function for re-sampling spectra to a new RV frame"""
