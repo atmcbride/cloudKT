@@ -39,11 +39,11 @@ def pipeline(config):
     # load the sightline module
     logger.info('--- Loading sightline module ---')
     sightline_module = load_module(config['SIGHTLINE_MODULE'])
-    Sightline = getattr(sightline_module, 'ForegroundModifiedSightline_v2')
+    Sightline = getattr(sightline_module, config['SIGHTLINE_OBJECT'])
 
     sightlines = []
     for i in range(10): 
-        sightlines.append(Sightline(stars, emission_CO, (0.05, 0.05)))
+        sightlines.append(Sightline(stars, (158+i, -8.5)))
     
     logger.info('Populating sightlines...')
 

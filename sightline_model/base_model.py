@@ -1,11 +1,22 @@
 ### created 2025-02.08 by a. mcbride
 import numpy as np
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d                           
+
+lambda0 = 15272.42
+sigma0 = 1.15
 
 class BaseModel():
     """
     Base class for models. Not for use on its own.
     """
+
+    def __init__(self):
+        self.model_name = "BaseModel"
+        self.lambda0 = 15272.42
+        self.sigma0 = 1.15
+        self.wavs = self.get_wavs()
+        self.window = (self.wavs > lambda0 -10) & (self.wavs < lambda0 + 10)
+        self.wavs_window = self.wavs[self.window]
 
     @staticmethod
     def select_near_point(tab, l, b, radius=1):
@@ -14,7 +25,7 @@ class BaseModel():
         """
         cond = np.sqrt((tab['GLON'] - l)**2 + (tab['GLAT'] - b)**2) < radius
         return np.where(cond)[0]
-    
+     
     @staticmethod
     def differentialAmplitude(dAV_dd, dd=1.0):
         """

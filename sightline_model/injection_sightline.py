@@ -2,7 +2,7 @@
 
 import numpy as np
 from astropy.io import fits
-from sightline import Sightline
+from cloudKT.sightline_model.oldsightline import Sightline
 
 class InjectionSightline(Sightline):
     def __init__(self, stars, rvelo, dAVdd = None, injectRealContinuum = True, bins = None, **kwargs):

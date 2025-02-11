@@ -1,0 +1,8 @@
+{
+    "_COMMENT": "Sample configuration to use the a synthetic-data sightline model",
+    "SIGHTLINE_MODULE": "sightline_model.injection_sightline",
+    "SIGHTLINE_OBJECT": "InjectionSightline",
+    "SIGHTLINE_PARAMETERS":{
+        "PROCESS_DATA": "process_data"
+    }
+}

@@ -33,7 +33,5 @@
 
   "SIGHTLINE_MODULE": "sightline_model.sightline",
   "SIGHTLINE_OBJECT": "Sightline",
-  "SIGHTLINE_PARAMETERS":{
-  "PROCESS_DATA": "process_data"
-  }
+  "SIGHTLINE_PARAMETERS":{}
 }

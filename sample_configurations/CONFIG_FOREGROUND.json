@@ -1,0 +1,8 @@
+{
+    "_COMMENT": "Sample configuration to use the foreground-modified (surface fit prior) sightline model",
+    "SIGHTLINE_MODULE": "sightline_model.foreground_sightline",
+    "SIGHTLINE_OBJECT": "ForegroundSightline",
+    "SIGHTLINE_PARAMETERS":{
+        "PROCESS_DATA": "process_data"
+    }
+}
