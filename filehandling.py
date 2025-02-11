@@ -4,9 +4,9 @@ from astropy.table import Table
 from astropy.io import fits
 
 
-CAresdir = '/uufs/astro.utah.edu/common/home/u1371365/Data/230420_CAResiduals/'
-CAMADGICSresdir = '/uufs/astro.utah.edu/common/home/u1371365/Data/230829_MADGICSResiduals/'
-respath  = '/uufs/astro.utah.edu/common/home/u1371365/StellarResidualsSpring2022/Residuals/'
+CAresdir = '/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/'
+CAMADGICSresdir = '/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230829_MADGICSResiduals/'
+# respath  = '/uufs/astro.utah.edu/common/home/u1371365/StellarResidualsSpring2022/Residuals/'
 
 
 def get_ca_res(fname):

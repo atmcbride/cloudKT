@@ -40,12 +40,12 @@ def pipeline(config):
     logger.info('--- Loading sightline module ---')
     sightline_module = load_module(config['SIGHTLINE_MODULE'])
     Sightline = getattr(sightline_module, config['SIGHTLINE_OBJECT'])
+    logger.info('Populating sightlines...')
 
     sightlines = []
-    for i in range(10): 
-        sightlines.append(Sightline(stars, (158+i, -8.5)))
+    for i in range(7): 
+        sightlines.append(Sightline(stars, (159+i, -8.5), dust))
     
-    logger.info('Populating sightlines...')
 
     logger.info('--- Loading Model ---')
     logger.info('Loading MCMC module...')

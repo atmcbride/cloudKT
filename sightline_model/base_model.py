@@ -5,12 +5,12 @@ from scipy.interpolate import interp1d
 lambda0 = 15272.42
 sigma0 = 1.15
 
-class BaseModel():
+class BaseModel:
     """
     Base class for models. Not for use on its own.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.model_name = "BaseModel"
         self.lambda0 = 15272.42
         self.sigma0 = 1.15
@@ -31,7 +31,7 @@ class BaseModel():
         """
         Converts a dAV_dd value to a dAMP(DIB)_dd value.
         """
-        if type(dd) == float:
+        if np.isscalar(dd):
             return  0.024 * dAV_dd * dd  
         elif dd.shape == dAV_dd.shape:
             return 0.024 * dAV_dd * dd 
