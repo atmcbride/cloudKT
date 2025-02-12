@@ -33,5 +33,11 @@
 
   "SIGHTLINE_MODULE": "sightline_model.sightline",
   "SIGHTLINE_OBJECT": "Sightline",
-  "SIGHTLINE_PARAMETERS":{}
+  "SIGHTLINE_PARAMETERS":{},
+
+    "_COMMENT": "Specify Bayesian implementation parameters",
+    "MCMC_FUNCTIONS":{
+        "LOG_LIKELIHOOD": {"MODULE": "mcmc_functions", "FUNCTION": "log_likelihood", "PARAMETERS": {}},
+        "LOG_PRIOR": {"MODULE": "mcmc_functions", "FUNCTION": ["log_prior"], "PARAMETERS": [{}]}
+    }
 }

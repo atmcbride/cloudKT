@@ -4,7 +4,8 @@ import os
 import sys
 import logging
 
-from utilities import load_module, load_json, merge_configs#, logger_setup
+from utilities import load_module, load_json, merge_configs
+from mcmc_framework import MCMC_Framework
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +44,13 @@ def pipeline(config):
     logger.info('Populating sightlines...')
 
     sightlines = []
-    for i in range(7): 
-        sightlines.append(Sightline(stars, (159+i, -8.5), dust))
+    for i in range(1): 
+        sightlines.append(Sightline(stars, (160+i, -8.5), dust))
     
 
     logger.info('--- Loading Model ---')
+    mcmc_framework = MCMC_Framework()
+    
     logger.info('Loading MCMC module...')
 
     logger.info('--- Running Model ---')
