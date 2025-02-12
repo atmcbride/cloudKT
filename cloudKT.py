@@ -4,14 +4,18 @@ import os
 import sys
 import logging
 
+from multiprocessing import Pool
+
 from utilities import load_module, load_json, merge_configs
-from mcmc_framework import MCMC_Framework
 
 logger = logging.getLogger(__name__)
+
+program_directory = None
 
 def main():
     # Parse the command line arguments
     args = parse_args()
+    global program_directory
     program_directory = args.directory
     config_file = args.config
     default_file = args.default
@@ -44,17 +48,31 @@ def pipeline(config):
     logger.info('Populating sightlines...')
 
     sightlines = []
+    log_probabilities = []
+
+    mcmc_module = load_module(config['MCMC_FRAMEWORK']['MODULE'])
+    # log_likelihood = getattr(mcmc_module, config['MCMC_FUNCTIONS']['LOG_LIKELIHOOD'])
+    # build_log_probability = getattr(mcmc_module, config['MCMC_FRAMEWORK']['BUILD_LOGPROB_FUNCTION'])
+    run_mcmc = getattr(mcmc_module, config['MCMC_FRAMEWORK']['RUN_MCMC_FUNCTION'])
+    mcmc_fns_module = load_module(config['MCMC_FUNCTIONS']['LOG_LIKELIHOOD']['MODULE'])
+    log_likelihood = getattr(mcmc_fns_module, config['MCMC_FUNCTIONS']['LOG_LIKELIHOOD']['FUNCTION'])
+
+    log_priors = []
+    for item in config['MCMC_FUNCTIONS']['LOG_PRIOR']:
+        log_prior_module = load_module(item['MODULE'])
+        log_prior = getattr(log_prior_module, item['FUNCTION'])
+        log_priors.append((log_prior, item['PARAMETERS']))
+
     for i in range(1): 
         sightlines.append(Sightline(stars, (160+i, -8.5), dust))
-    
-
-    logger.info('--- Loading Model ---')
-    mcmc_framework = MCMC_Framework()
-    
-    logger.info('Loading MCMC module...')
 
     logger.info('--- Running Model ---')
+    pool = Pool(8)
     logger.info('Running MCMC...')
+
+    mcmc_file = program_directory + '/mcmc_output.h5'
+    sampler = run_mcmc(sightlines[0], log_likelihood, log_priors, pool = pool, filename = mcmc_file)
+
 
     # Load in dust data
     # FILE: Load in stellar data, apply selections to assign to sightlines

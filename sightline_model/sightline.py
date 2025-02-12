@@ -16,7 +16,7 @@ class Sightline(BaseModel):
         super().__init__()
         # if star_selection is None:
         l, b = coordinates
-        self.stars = stars[self.select_near_point(stars, l, b)]
+        self.stars = stars[self.select_near_point(stars, l, b, radius = 0.3)]
         # else: 
         #     self.stars = star_selection(stars, l, b)
 
