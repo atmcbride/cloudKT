@@ -3,6 +3,7 @@ import emcee
 import logging
 from functools import partial
 
+
 from utilities import load_module
 
 logger = logging.getLogger(__name__)
@@ -120,10 +121,26 @@ def run_mcmc(sightline, log_likelihood, log_priors, steps = 1000, nwalkers = 100
     sampler.run_mcmc(init, steps, progress = True, store = True);
 
     # INITIAL TESTS WITH UN-CONFIGURED PRIORS
-    # WITH POOL, 6 VARIABLES, 100 WALKERS, THIS TAKES 05:37
-    # WITHOUT POOL, 6 VARIABLES, 100 WALKERS, THIS TAKES 01:08
 
-    # WITH POOL, 12 VARIABLES, 100 WALKERS, THIS TAKES 
-    # WITHOUT POOL, 12 VARIABLES, 100 WALKERS, THIS TAKES 
+    # WITH POOL(8), 6 VARIABLES, 100 WALKERS, THIS TAKES 05:37
+    # WITHOUT POOL(8), 6 VARIABLES, 100 WALKERS, THIS TAKES 01:08
+
+    # WITH POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 05:28
+    # WITHOUT POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 01:22
+
+    # I FORGOT TO TURN ON 
+    # import os
+    # os.environ['OMP_NUM_THREADS'] = "1"
+    # ADDED TO THIS THIS FILE
+
+    # WITH POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 04:54
+
+    # ADDED TO cloudKT.py
+
+    # WITH POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 04:52
+
+    # WITH POOL(20), 12 VARIABLES, 100 WALKERS, THIS TAKES 04:06
+
+
 
     return sampler

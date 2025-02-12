@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+os.environ['OMP_NUM_THREADS'] = "1"
 import sys
 import logging
 
@@ -67,7 +68,7 @@ def pipeline(config):
         sightlines.append(Sightline(stars, (160+i, -8.5), dust))
 
     logger.info('--- Running Model ---')
-    pool = Pool(8)
+    pool = None
     logger.info('Running MCMC...')
 
     mcmc_file = program_directory + '/mcmc_output.h5'
