@@ -54,29 +54,6 @@ logger = logging.getLogger(__name__)
 #         log_prior = self.log_prior(theta)
 #         return log_likelihood + log_prior
     
-def build_log_probability(mcmc_config, sightline):
-    """
-    Setup the MCMC framework (FUNCTIONALIZED)
-    """
-    log_likelihood_module = load_module(mcmc_config['LOG_LIKELIHOOD']['MODULE'])
-    log_likelihood_fn = getattr(log_likelihood_module, mcmc_config['LOG_LIKELIHOOD']['FUNCTION'])
-    log_likelihood_kwargs = mcmc_config['LOG_LIKELIHOOD']['PARAMETERS']
-
-    log_prior_configs = mcmc_config['LOG_PRIOR']
-    log_priors = []
-    for item in log_prior_configs:
-        log_prior_module = load_module(item['MODULE'])
-        log_prior_fn = getattr(log_prior_module, item['FUNCTION'])
-        log_priors.append((log_prior_fn, item['PARAMETERS']))
-
-# def log_likelihood(theta, sightline = None, **kwargs):
-#     return log_likelihood_fn(theta, sightline = sightline, **log_likelihood_kwargs)
-
-
-    
-
-    
-    # return log_probability
 
 
 
@@ -88,7 +65,7 @@ def log_probability(theta, sightline = None, log_likelihood = None, log_priors =
         lp += log_prior_fn(theta, sightline = sightline, **log_prior_kwargs)
     return ll + lp
 
-def run_mcmc(sightline, log_likelihood, log_priors, steps = 1000, nwalkers = 100, pool = None, filename = None):
+def run_mcmc(sightline, mcmc_config, log_likelihood, log_priors, steps = 1000, nwalkers = 100, pool = None, filename = None):
     """"
     Run the MCMC
     """
@@ -107,7 +84,11 @@ def run_mcmc(sightline, log_likelihood, log_priors, steps = 1000, nwalkers = 100
         backend = None
         logger.warning('NO BACKEND')
 
-    # log_probability = partial(log_probability)
+    priors = []
+    for item in mcmc_config:
+        pass
+
+
     sampler = emcee.EnsembleSampler(nwalkers, ndim_amp, log_probability, pool = pool, backend = backend, kwargs = {
                                     'sightline': sightline, 'log_likelihood': log_likelihood, 'log_priors': log_priors})
 

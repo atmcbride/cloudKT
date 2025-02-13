@@ -36,10 +36,12 @@
   "SIGHTLINE_PARAMETERS":{},
 
     "_COMMENT": "Specify Bayesian implementation parameters",
-    "MCMC_FRAMEWORK":
-        {"MODULE": "mcmc_framework", "BUILD_LOGPROB_FUNCTION": "build_log_probability", "RUN_MCMC_FUNCTION": "run_mcmc"},
-    "MCMC_FUNCTIONS":{
-        "LOG_LIKELIHOOD": {"MODULE": "mcmc_functions", "FUNCTION": "log_likelihood", "PARAMETERS": {}},
-        "LOG_PRIOR": [{"MODULE": "mcmc_functions", "FUNCTION": "log_prior_v", "PARAMETERS": {}}]
+    "CONFIGURE_MCMC":
+        {"MODULE": "mcmc_framework", "RUN_MCMC_FUNCTION": "run_mcmc",
+        "MCMC_FUNCTIONS":{
+            "LOG_LIKELIHOOD": {"MODULE": "mcmc_functions", "FUNCTION": "log_likelihood", "PARAMETERS": {}},
+            "LOG_PRIOR": [{"MODULE": "mcmc_functions", "FUNCTION": "log_prior_v", "PARAMETERS": {}}]
+        }
     }
+
 }
