@@ -1,0 +1,3 @@
+Directory to store previous versions of DEFAULTS.json, code, etc., upon signficant updates between releases.
+This file should perhaps also contain a changelog between various releases, so that it's immediately evident 
+what changes are.

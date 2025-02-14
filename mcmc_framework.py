@@ -8,64 +8,7 @@ from utilities import load_module
 
 logger = logging.getLogger(__name__)
 
-# def functions_must_exist(func):
-#     def wrapper(self, *args, **kwargs):
-#         """
-#         Check that the log likelihood and log prior functions have been assigned
-#         """
-#         if not hasattr(self, 'log_likelihood'):
-#             raise Exception("Log likelihood function has not been assigned!")
-#         if not hasattr(self, 'log_priors'):
-#             raise Exception("Log prior functions have not been assigned!")
-#         return func(self, *args, **kwargs)
-#     return wrapper
-
-
-# class MCMC_Framework:
-#     def intake_log_prior(self, log_prior_function, **log_prior_kwargs):
-#         """
-#         Intake a specified log prior function and its kwargs. 
-#         Note that you can add many log prior functions! As long as they all take the form log_prior(theta, **log_prior_kwargs)
-#         and the kwargs are specified to this function, they will be passed to the appropriate log_prior when run in the log-probability fn
-#         """
-#         if not hasattr(self, 'log_priors'):
-#             self.log_priors = []
-#         self.log_priors.append((log_prior_function, log_prior_kwargs))
-#         pass
-
-#     def intake_log_likelihood(self, log_likelihood_function, **log_likelihood_kwargs):
-#         """
-#         Intake a specified log likelihood function and its kwargs
-#         By design, there can only be one log likelihood function!
-#         """
-#         self.log_likelihood = log_likelihood_function
-#         self.log_likelihood_kwargs = log_likelihood_kwargs
-    
-#     def log_prior(self, theta):
-#         log_prior_value = 0
-#         for item in self.log_priors:
-#             log_prior_fn, log_prior_kwargs = item
-#             log_prior_value += log_prior_fn(theta, **log_prior_kwargs)
-#         return log_prior_value
-
-#     @functions_must_exist
-#     def log_probability(self, theta):
-#         log_likelihood = self.log_likelihood(theta, **self.log_likelihood_kwargs)
-#         log_prior = self.log_prior(theta)
-#         return log_likelihood + log_prior
-    
-
-
-
-def log_probability(theta, sightline = None, log_likelihood = None, log_priors = None, **kwargs):
-    ll = log_likelihood(theta, sightline = sightline, **kwargs)
-    lp = 0
-    for item in log_priors:
-        log_prior_fn, log_prior_kwargs = item
-        lp += log_prior_fn(theta, sightline = sightline, **log_prior_kwargs)
-    return ll + lp
-
-def run_mcmc(sightline, mcmc_config, log_likelihood, log_priors, steps = 1000, nwalkers = 100, pool = None, filename = None):
+def run_mcmc(sightline, mcmc_config, steps = 1000, nwalkers = 100, pool = None, filename = None):
     """"
     Run the MCMC
     """
@@ -84,9 +27,21 @@ def run_mcmc(sightline, mcmc_config, log_likelihood, log_priors, steps = 1000, n
         backend = None
         logger.warning('NO BACKEND')
 
-    priors = []
-    for item in mcmc_config:
-        pass
+    ll_config = mcmc_config["LOG_LIKELIHOOD"]
+    ll_module = load_module(ll_config["MODULE"])
+    ll_fn = getattr(ll_module, ll_config["FUNCTION"])
+    ll_params = ll_config["PARAMETERS"]
+    log_likelihood = (ll_fn, ll_params) # Pass as tuple (fn, fn_kwargs)
+    
+
+    log_priors = []
+    lp_config = mcmc_config["LOG_PRIOR"]
+    for lp_entry in lp_config:
+        lp_module = load_module(lp_entry["MODULE"])
+        lp_fn = getattr(lp_module, lp_entry["FUNCTION"])
+        lp_params = lp_entry["PARAMETERS"]
+        log_prior = (lp_fn, lp_params)
+        log_priors.append(log_prior) # Pass as list of tuples (fn, fn_kwargs)
 
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim_amp, log_probability, pool = pool, backend = backend, kwargs = {
@@ -125,3 +80,29 @@ def run_mcmc(sightline, mcmc_config, log_likelihood, log_priors, steps = 1000, n
 
 
     return sampler
+
+def log_probability(theta, sightline = None, log_likelihood = None, log_priors = None, **kwargs):
+    """
+    For a given input vector theta, populated Sightline object (for data and modeling functions), log-likelihood function with inputs,
+    and a list of log-prior functions with inputs, calculate and return the log-probability of theta 
+    """
+    ll_fn, ll_kwargs = log_likelihood
+    ll = ll_fn(theta, sightline = sightline, **ll_kwargs)
+    lp = evaluate_log_prior(theta, log_priors = log_priors, sightline = sightline, **kwargs)
+
+    return ll + lp
+
+
+def evaluate_log_prior(theta, log_priors = None, sightline = None, **kwargs):
+    lp = 0
+    for lp_entry in log_priors:
+        lp_fn, lp_kwargs = lp_entry
+        lp_fn_val = lp_fn(theta, sightline = sightline, **lp_kwargs)
+        lp += lp_fn_val
+    return lp
+
+def load_from_hdf5(h5_fname):
+    reader = emcee.backends.HDFBackend(h5_fname)
+    chain = reader.get_chain()
+    prob = reader.get_log_prob()
+    return reader

@@ -1,47 +1,92 @@
 {
-  "STAR_METADATA": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/CA_meta_LSR_uncerts.fits",
-  "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
-  "CO_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/DHT21_Taurus_interp.fits",
+    "STAR_METADATA": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/CA_meta_LSR_uncerts.fits",
+    "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
+    "CO_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/DHT21_Taurus_interp.fits",
 
-  "_COMMENT": "Specify methods and their parameters to load data",
-  "LOAD_DATA_MODULE": "load_data",
-  "LOAD_DATA_METHOD": "load_data",
-  "LOAD_DATA_PARAMETERS": {
-      "LOAD_STARS_METHOD": "load_stars",
-      "LOAD_STARS_PARAMETERS": {
-          "STAR_METADATA": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/CA_meta_LSR_uncerts.fits",
-          "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
-          "RESTRICTIONS": [{"SNR": [80, ">"], "TEFF": [5000, ">"]}, {"SNR": [150, ">"]},
-                          {"ASPCAP_CHI2_1": [1, ">"], "ASPCAP_CHI2_1": [1, "<"]}]},
-      "LOAD_DUST_METHOD": "load_dust",
-      "LOAD_DUST_PARAMETERS": {},
-      "LOAD_CO_METHOD": "load_CO",
-      "LOAD_CO_PARAMETERS": {
-          "CO_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/catalogs/DHT21_Taurus_interp.fits"},
-      "LOAD_HI_METHOD": "load_HI",
-          "LOAD_HI_PARAMETERS": {
-              "HI_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/catalogs/HI4PI_CAR.fits"}
-          },
+    "_COMMENT": "Specify methods and their parameters to load data",
+    "LOAD_DATA": {
+        "MODULE": "load_data",
+        "METHOD": "load_data", 
+        "PARAMETERS": {
+            "LOAD_STARS": {"MODULE": "load_data", "METHOD": "load_stars",
+                "PARAMETERS": {
+                    "STAR_METADATA": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/CA_meta_LSR_uncerts.fits",
+                    "RESIDUALS_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/data/230420_CAResiduals/",
+                    "RESTRICTIONS": [{"SNR": [80, ">"], "TEFF": [5000, ">"]}, {"SNR": [150, ">"]}, {"ASPCAP_CHI2_1": [1, ">"], "ASPCAP_CHI2_1": [1, "<"]}]
+                }
+            },
+            "LOAD_DUST": {"MODULE": "load_data", "METHOD": "load_dust",
+                "PARAMETERS": {
+                }
+            },
+            "LOAD_CO": {"MODULE": "load_data", "METHOD": "load_emission",
+                "PARAMETERS": {
+                    "CO_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/catalogs/DHT21_Taurus_interp.fits",
+                    "CARRIER": "CO"
+                }
+            },
+            "LOAD_HI":{"MODULE": "load_data", "METHOD": "load_emission",
+                "PARAMETERS": {
+                    "HI_PATH": "/uufs/chpc.utah.edu/common/home/astro/zasowski/catalogs/HI4PI_CAR.fits",
+                    "CARRIER": "HI"
+                }
+            }
+        }
+    },
 
 
-  "_COMMENT": "specify functions to divvy up stars to populate sightlines",
-  "STAR_SELECTION_MODULE": "star_selection_metrics",
-  "STAR_SELECTION": "selectOnEW",
-  "STAR_SELECTION_PARAMETERS":{
-  "vector":[0.05, 0.05]
-  },
+    "_COMMENT": "specify functions to divvy up stars to populate sightlines",
+    "STAR_SELECTION_MODULE": "star_selection_metrics",
+    "STAR_SELECTION": "selectOnEW",
+    "STAR_SELECTION_PARAMETERS":{
+    "vector":[0.05, 0.05]
+    },
 
-  "SIGHTLINE_MODULE": "sightline_model.sightline",
-  "SIGHTLINE_OBJECT": "Sightline",
-  "SIGHTLINE_PARAMETERS":{},
+    "SIGHTLINE": {
+        "MODULE": "sightline_model.sightline",
+        "CLASS": "Sightline",
+        "PARAMETERS":{
+            
+        }
+    },
 
     "_COMMENT": "Specify Bayesian implementation parameters",
-    "CONFIGURE_MCMC":
-        {"MODULE": "mcmc_framework", "RUN_MCMC_FUNCTION": "run_mcmc",
-        "MCMC_FUNCTIONS":{
-            "LOG_LIKELIHOOD": {"MODULE": "mcmc_functions", "FUNCTION": "log_likelihood", "PARAMETERS": {}},
-            "LOG_PRIOR": [{"MODULE": "mcmc_functions", "FUNCTION": "log_prior_v", "PARAMETERS": {}}]
+    "RUN_MCMC": {
+        "MODULE": "mcmc_framework", 
+        "METHOD": "run_mcmc",
+        "PARAMETERS": {
+            "LOG_LIKELIHOOD": {
+                "MODULE": "mcmc_functions", 
+                "FUNCTION": "log_likelihood", 
+                "PARAMETERS": {
+
+                }
+            },
+            "LOG_PRIOR": [{
+                "MODULE": "mcmc_functions", 
+                "FUNCTION": "log_prior_v", 
+                "PARAMETERS": {
+
+                }
+            },{
+                "MODULE": "mcmc_functions",
+                "FUNCTION": "log_prior_davdd", 
+                "PARAMETERS": {
+                }
+            },{
+                "MODULE": "mcmc_functions",
+                "FUNCTION": "log_prior_davdd_reg", 
+                "PARAMETERS": {
+                    "width_factor": 10
+                }
+            }],
+            "NO":{
+                "MODULE": "mcmc_functions",
+                "FUNCTION": "log_prior_davdd_reg_group", 
+                "PARAMETERS": {
+                    "width_factor": 3
+                }
+            }
         }
     }
-
 }
