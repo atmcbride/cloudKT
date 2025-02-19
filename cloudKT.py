@@ -58,7 +58,7 @@ def pipeline(config):
 
     sightlines = []
     for i in range(1):
-        sightlines.append(Sightline(stars, (160 + i, -8.5), dust))
+        sightlines.append(Sightline(stars, (163 + i, -8.5), dust))
 
     logger.info("--- Running Model ---")
     logger.info("Starting MCMC Setup...")
@@ -67,7 +67,7 @@ def pipeline(config):
     mcmc_config = config["RUN_MCMC"]["PARAMETERS"]
 
     mcmc_file = program_directory + "/mcmc_output.h5"
-    if False:
+    if True:
         pool = None
         logger.info("Running MCMC...")
 
@@ -82,8 +82,10 @@ def pipeline(config):
         for j in range(0, sightlines[0].ndim + sightlines[0].ndim * sightlines[0].nsig, 1):
             fig, ax = plot_walkers(chain, j)
             fig.savefig(program_directory+ '/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
+            fig.close()
         fig, ax = plot_signals_sample(chain, sightlines[i])
-        fig.savefig(program_directory + '/signals_sl{i}_var{j}.jpg'.format(i=i, j=j))
+        fig.savefig(program_directory + '/signals_sl{i}.jpg'.format(i=i, j=j))
+        fig.close()
 
 
 

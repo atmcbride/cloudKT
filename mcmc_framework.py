@@ -16,9 +16,9 @@ def run_mcmc(sightline, mcmc_config, steps = 1000, nwalkers = 100, pool = None, 
     nstar = len(sightline.stars)
     ndim_amp = int(ndim + ndim * nstar)
 
-    if nwalkers < 2 * ndim:
-        nwalkers = 2 * ndim + 5
-        print('WARNING: nwalkers updated to', nwalkers)
+    if nwalkers < 2 * ndim_amp:
+        nwalkers = 2 * ndim_amp + 5
+        logger.info("N walkers updated to " + str(nwalkers))
 
     if filename is not None:
         backend = emcee.backends.HDFBackend(filename)
@@ -52,32 +52,8 @@ def run_mcmc(sightline, mcmc_config, steps = 1000, nwalkers = 100, pool = None, 
     init[:, ndim:][(init[:, ndim:] <= 0.1)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.1))
 
     print('NDIM:', ndim, 'NSTAR:', nstar, 'INITSHAPE:', init.shape)
-    # init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
 
     sampler.run_mcmc(init, steps, progress = True, store = True);
-
-    # INITIAL TESTS WITH UN-CONFIGURED PRIORS
-
-    # WITH POOL(8), 6 VARIABLES, 100 WALKERS, THIS TAKES 05:37
-    # WITHOUT POOL(8), 6 VARIABLES, 100 WALKERS, THIS TAKES 01:08
-
-    # WITH POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 05:28
-    # WITHOUT POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 01:22
-
-    # I FORGOT TO TURN ON 
-    # import os
-    # os.environ['OMP_NUM_THREADS'] = "1"
-    # ADDED TO THIS THIS FILE
-
-    # WITH POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 04:54
-
-    # ADDED TO cloudKT.py
-
-    # WITH POOL(8), 12 VARIABLES, 100 WALKERS, THIS TAKES 04:52
-
-    # WITH POOL(20), 12 VARIABLES, 100 WALKERS, THIS TAKES 04:06
-
-
 
     return sampler
 
