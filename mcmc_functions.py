@@ -44,6 +44,44 @@ def log_prior_davdd_reg_group(theta, sightline = None, width_factor = 3, **kwarg
     return lp_val
 
 
+class Logprior_Foreground:
+    def __init__(self, sightline, **kwargs):
+        l = sightline.l
+        b = sightline.b
+        self.distance = sightline.stars("DIST")
+        self.pointfit = self.polynomial2d(l, b)
+        self.pointfit_width = 2.404363059339516
+
+    def polynomial2d(self, x1, x2, theta = None, uncert = None):  
+        if theta is None:
+            theta = np.array([5.03964666, -1.04129592, -0.72842925, -0.20292219,  0.0206567,  -0.14442016])
+        if uncert is None:
+            uncert = 2.404363059339516
+        if np.array(x1).ndim != 1:
+            x1 = np.array([x1])
+            x2 = np.array([x2])
+        x1 = x1 - 160 # FOR CA CLOUD SPECIFICIALLY
+        x2 = x2 + 8 # DITTO
+        X = np.array([[np.ones(np.array(x1).shape), x1, x2, x1 * x2, x1**2, x2**2]]).T
+        matrix = X * theta[:, np.newaxis]
+        return np.nansum(matrix, axis =1).item()
+    
+    def logprior_foreground_v(self, theta, sightline = None, foreground_distance = 400, **kwargs):    
+        v = np.copy(theta[:sightline.ndim])
+        foreground = self.distance <= foreground_distance
+        prior_val = np.zeros(self.distance.shape)
+        prior_val[foreground] = np.nansum(- 0.5 * np.nansum((v - self.pointfit.item)**2 / (self.pointfit_width**2)))
+        return prior_val.item()
+        
+    def logprior_foreground_av(self, theta, sightline = None, foreground_distance = 400):
+        av = np.copy(theta[sightline.ndim]).reshape(-1, sightline.ndim)
+        foreground = self.distance <= foreground_distance
+        prior_val = np.zeros(self.distance.shape)
+        ampfit = (0.01928233, 0.01431857)
+        avf = lambda x, mu, sigma :  -(x - mu)**2 / (2 * sigma**2)
+        prior_val[foreground] = - 0.5 * np.nansum((av - ampfit[0])**2 / (ampfit[1]**2))
+        return prior_val.item()
+
 def log_prior(theta, sightline = None, log_priors = [],  **kwargs):
     log_prior_value = 0
     for item in log_priors:

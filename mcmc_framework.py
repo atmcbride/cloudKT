@@ -38,10 +38,18 @@ def run_mcmc(sightline, mcmc_config, steps = 1000, nwalkers = 100, pool = None, 
     lp_config = mcmc_config["LOG_PRIOR"]
     for lp_entry in lp_config:
         lp_module = load_module(lp_entry["MODULE"])
-        lp_fn = getattr(lp_module, lp_entry["FUNCTION"])
-        lp_params = lp_entry["PARAMETERS"]
-        log_prior = (lp_fn, lp_params)
-        log_priors.append(log_prior) # Pass as list of tuples (fn, fn_kwargs)
+        if "OBJECT" in lp_entry.keys():
+            lp_object = getattr(lp_module, lp_entry["OBJECT"])(sightline, lp_entry["INIT"])
+            lp_fn = getattr(lp_object, lp_entry["FUNCTION"])
+            lp_params = lp_entry["PARAMETERS"]
+            log_prior = (lp_fn, lp_params)
+            log_priors.append(log_prior)
+
+        else:
+            lp_fn = getattr(lp_module, lp_entry["FUNCTION"])
+            lp_params = lp_entry["PARAMETERS"]
+            log_prior = (lp_fn, lp_params)
+            log_priors.append(log_prior) # Pass as list of tuples (fn, fn_kwargs)
 
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim_amp, log_probability, pool = pool, backend = backend, kwargs = {

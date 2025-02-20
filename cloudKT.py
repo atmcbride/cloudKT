@@ -2,6 +2,8 @@ import argparse
 import json
 import os
 
+import matplotlib.pyplot as plt
+
 os.environ["OMP_NUM_THREADS"] = "1"
 import sys
 import logging
@@ -82,10 +84,10 @@ def pipeline(config):
         for j in range(0, sightlines[0].ndim + sightlines[0].ndim * sightlines[0].nsig, 1):
             fig, ax = plot_walkers(chain, j)
             fig.savefig(program_directory+ '/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
-            fig.close()
+            plt.close()
         fig, ax = plot_signals_sample(chain, sightlines[i])
         fig.savefig(program_directory + '/signals_sl{i}.jpg'.format(i=i, j=j))
-        fig.close()
+        plt.close()
 
 
 
