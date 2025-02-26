@@ -83,13 +83,15 @@ def select_on_emission(tab, emission = None, threshold = 0.03, ref_point = (167.
     star_selection = stars_CO_correlation > threshold
     return star_selection
 
-def select_stars(tab, **kwargs):
+def select_stars(tab,reset_position = True, **kwargs):
     tab = tab[select_on_emission(tab,  **kwargs)]
     tab = tab[select_on_EW(tab, **kwargs)]
-    tab['GLON_TRUE'] = np.copy(tab['GLON'])
-    tab['GLAT_TRUE'] = np.copy(tab['GLAT'])
-    tab['GLON'] = 167.4 + np.random.normal(scale = 0.4, size = len(tab))
-    tab['GLAT'] = -8.3 + np.random.normal(scale = 0.4, size = (len(tab)))
+
+    if reset_position:
+        tab['GLON_TRUE'] = np.copy(tab['GLON'])
+        tab['GLAT_TRUE'] = np.copy(tab['GLAT'])
+        tab['GLON'] = 167.4 + np.random.normal(scale = 0.4, size = len(tab))
+        tab['GLAT'] = -8.3 + np.random.normal(scale = 0.4, size = (len(tab)))
 
     return tab
 

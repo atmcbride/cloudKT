@@ -49,7 +49,44 @@ class ForegroundSightline(BaseModel):
 
         self.test_init_signals = self.model_signals(self.rvelo, self.dAVdd)
 
-    def get_DIBs(self, dust_data, MADGICS=False, alternative_data_processing=None, **kwargs):
+    def get_DIBs(self, dust_data, **kwargs):
+        signals = np.zeros((len(self.stars), len(self.wavs_window)))
+        signal_errs = np.zeros((len(self.stars), len(self.wavs_window)))
+        dAVdd = np.zeros((len(self.stars), len(self.bins) - 1))
+        dAVdd_all = np.zeros((len(self.stars), len(self.bins) - 1))
+        dAVdd_mask = np.zeros((len(self.stars), len(self.bins) - 1)).astype(bool)
+        if self.alternative_data_processing is not None: 
+            # alternative data processing must be assigned outside of class;
+            # takes self, aspcap, medres, apstar, star_rv, and **kwargs
+            for i in range(len(self.stars)):
+                    star = self.stars[i]
+                    star_rv = star["VHELIO_AVG"]
+                    aspcap = fits.open(self.getASPCAP(star))
+                    apstar = fits.open(self.getapStar(aspcap))
+                    medres = fits.open(
+                        self.get_medres(star["TEFF"], star["LOGG"], star["M_H"])
+                    )
+                    sig, err = self.alternative_data_processing(
+                        self, aspcap, medres, apstar, star_rv, **kwargs
+                    )
+                    signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
+
+                    l, b = star["GLON"], star["GLAT"]
+                    dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
+                        l, b, star["DIST"], self.bins, dust_data, **kwargs
+                    )
+
+        else:
+            pass
+        self.signals = signals
+        self.signal_errs = signal_errs
+        self.dAVdd = dAVdd
+        self.voxel_dAVdd = np.nanmedian(dAVdd_all, axis=0)
+        self.voxel_dAVdd_std = np.nanstd(dAVdd_all, axis=0, ddof=1)
+        self.dAVdd_mask = dAVdd_mask.astype(bool)
+
+
+    def get_DIBs_old(self, dust_data, MADGICS=False, alternative_data_processing=None, **kwargs):
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
         signal_errs = np.zeros((len(self.stars), len(self.wavs_window)))
         dAVdd = np.zeros((len(self.stars), len(self.bins) - 1))

@@ -21,6 +21,7 @@ class BaseModel:
         self.window = (self.wavs > lambda0 - 10) & (self.wavs < lambda0 + 10)
         self.wavs_window = self.wavs[self.window]
         self.medres_meta = None
+        self.alternative_data_processing = None
 
     @staticmethod
     def select_near_point(tab, l, b, radius=1):

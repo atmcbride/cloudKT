@@ -45,9 +45,11 @@
     "SIGHTLINE_SETUP": {
         "MODULE": "sightline_setup", 
         "PARAMETERS":{
-            "SIGHTLINE_MODULE": "sightline_model.sightline",
-            "SIGHTLINE_CLASS": "Sightline",
-            "SIGHTLINE_PARAMETERS": {
+            "SIGHTLINE":{
+                "MODULE": "sightline_model.sightline",
+                "CLASS": "Sightline",
+                "PARAMETERS": {
+                }
             },
             "N_SIGHTLINES": 1,
             "DATA_REPROCESS": "none",

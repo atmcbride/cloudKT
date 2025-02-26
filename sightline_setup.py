@@ -11,6 +11,15 @@ def initialize_sightlines(stars, dust, CO, HI, sightline_config):
     sightline_module = load_module(sightline_config["MODULE"])
     Sightline = getattr(sightline_module, sightline_config["CLASS"])
 
+    if sightline_config["DATA_REPROCESS"] != "none":
+        reprocess_module = load_module(sightline_config["DATA_REPROCESS"]["MODULE"])
+        reprocess_function = getattr(reprocess_module, sightline_config["DATA_REPROCESS"]["FUNCTION"])
+        Sightline.
+        pass
+
+    if sightline_config["STAR_SELECTION"] != "none":
+        pass
+
 
 
     return sightlines
