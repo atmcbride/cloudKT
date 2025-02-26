@@ -5,21 +5,29 @@ import astropy.units as u
 import astropy.constants as c
 from astropy.io import fits
 import logging
+from astropy.table import Table
 
-from base_model import BaseModel
+from .base_model import BaseModel
 from filehandling import get_medres, get_ca_res, get_madgics_res, getapStar, getASPCAP
 
 
 logger = logging.getLogger(__name__)
 
+lambda0 = 15272.42
+sigma0 = 1.15
+
 
 class ForegroundSightline(BaseModel):
-    def __init__(self, stars, coordinates, dust_data, select_stars = None,dfore = 400, **kwargs):
+    def __init__(self, stars, coordinates, dust_data, select_stars = (None, None),dfore = 401, **kwargs):
         super().__init__(self, stars, **kwargs)
         
-        if select_stars is None:
+        if select_stars[0] is None:
             l, b = coordinates
             self.stars = stars[self.select_near_point(stars, l, b, **kwargs)]
+            self.stars = stars[stars['DIST'] > dfore]
+        else:
+            select_stars_fn, select_stars_kwargs = select_stars
+            stars = select_stars_fn(stars, **select_stars_kwargs)
             self.stars = stars[stars['DIST'] > dfore]
         dist = self.stars['DIST']
 
@@ -39,7 +47,7 @@ class ForegroundSightline(BaseModel):
         self.ndim = len(self.voxel_dAVdd)
         self.nsig = len(self.stars)
 
-        self.test_init_signals = self.model_signals_fg(self.rvelo, self.dAVdd)
+        self.test_init_signals = self.model_signals(self.rvelo, self.dAVdd)
 
     def get_DIBs(self, dust_data, MADGICS=False, alternative_data_processing=None, **kwargs):
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
@@ -49,6 +57,7 @@ class ForegroundSightline(BaseModel):
         dAVdd_mask = np.zeros((len(self.stars), len(self.bins) - 1)).astype(bool)
 
         if alternative_data_processing is not None:
+            self.alternative_data_processing = alternative_data_processing
             # needs to take aspcap, medres, apstar, rv as arguments
             for i in range(len(self.stars)):
                 star = self.stars[i]
@@ -58,14 +67,14 @@ class ForegroundSightline(BaseModel):
                 medres = fits.open(
                     self.get_medres(star["TEFF"], star["LOGG"], star["M_H"])
                 )
-                sig, err = alternative_data_processing(
-                    self.aspcap, medres, apstar, star_rv
+                sig, err = self.alternative_data_processing(
+                    self, aspcap, medres, apstar, star_rv, **kwargs
                 )
                 signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
 
                 l, b = star["GLON"], star["GLAT"]
                 dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
-                    l, b, self.bins, star["DIST"], **kwargs
+                    l, b, star["DIST"], self.bins, dust_data, **kwargs
                 )
 
         else:
@@ -130,7 +139,7 @@ class ForegroundSightline(BaseModel):
             
             self.bins = bins
 
-    def model_signals_fg(self, rvelo, dAVdd=None, binsep = None):
+    def model_signals(self, rvelo, dAVdd=None, binsep = None):
         if dAVdd is None:
             dAVdd = self.dAVdd
         if binsep is None:
@@ -160,3 +169,4 @@ class ForegroundSightline(BaseModel):
             # signals[i, :] = single_signal(bin_index)
             signals[i, :] = single_signal(amp, bin_index)
         return signals
+    

@@ -5,7 +5,7 @@ import astropy.constants as c
 from astropy.io import fits
 import logging
 
-from sightline_model.base_model import BaseModel
+from base_model import BaseModel
 from filehandling import get_medres, get_ca_res, get_madgics_res, getapStar, getASPCAP
 
 
@@ -19,9 +19,11 @@ class Sightline(BaseModel):
         super().__init__()
         # if star_selection is None:
         l, b = coordinates
-        self.stars = stars[self.select_near_point(stars, l, b, radius=0.3)]
-        # else:
-        #     self.stars = star_selection(stars, l, b)
+        if star_selection is None:
+            self.stars = stars[self.select_near_point(stars, l, b, radius=0.3)]
+        else:
+            self.stars = star_selection(stars, l, b)
+    
 
         dist = stars["DIST"]
         if bins is not None:
@@ -157,3 +159,5 @@ class Sightline(BaseModel):
             bin_index = self.bin_inds[i]
             signals[i, :] = single_signal(amp, bin_index)
         return signals
+
+    

@@ -39,7 +39,7 @@ def run_mcmc(sightline, mcmc_config, steps = 1000, nwalkers = 100, pool = None, 
     for lp_entry in lp_config:
         lp_module = load_module(lp_entry["MODULE"])
         if "OBJECT" in lp_entry.keys():
-            lp_object = getattr(lp_module, lp_entry["OBJECT"])(sightline, lp_entry["INIT"])
+            lp_object = getattr(lp_module, lp_entry["OBJECT"])(sightline, **lp_entry["INIT_KWARGS"])
             lp_fn = getattr(lp_object, lp_entry["FUNCTION"])
             lp_params = lp_entry["PARAMETERS"]
             log_prior = (lp_fn, lp_params)

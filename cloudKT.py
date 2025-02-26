@@ -15,16 +15,22 @@ from utilities import load_module, load_json, merge_configs
 logger = logging.getLogger(__name__)
 
 program_directory = None
+args = None
+
+### UPDATE THIS ###
+from star_selection_metrics import select_stars
+from residual_process import generateClippedResidual
 
 
 
 
 from plotting.plot_walkers import plot_walkers
-from plotting.plot_signals import plot_signals_sample
+from plotting.plot_signals import plot_signals_sample, plot_signals_sample_fg
 from mcmc_framework import load_from_hdf5
 
 def main():
     # Parse the command line arguments
+    global args
     args = parse_args()
     global program_directory
     program_directory = args.directory
@@ -57,10 +63,26 @@ def pipeline(config):
     sightline_module = load_module(config["SIGHTLINE"]["MODULE"])
     Sightline = getattr(sightline_module, config["SIGHTLINE"]["CLASS"])
     logger.info("Populating sightlines...")
-
     sightlines = []
     for i in range(1):
-        sightlines.append(Sightline(stars, (163 + i, -8.5), dust))
+        if args.populate_from_files == "false":
+            logger.info("Populating sightlines from the California Cloud dataset...")
+            selection_kwargs = {"emission": emission_CO, "vector": (0.02, 0.02)}
+            sightlines.append(Sightline(stars, (164 + i, -8.5), dust, select_stars = (select_stars, selection_kwargs), alternative_data_processing = generateClippedResidual))
+        
+            if args.stars_to_files == "true":
+                if not os.path.exists(program_directory + "/sightline_outputs/"):
+                    os.makedir(program_directory + "/sightline_outputs/")
+                sightlines[i].stars.write(program_directory + "/sightline_outputs/stars_{}.fits".format(i), overwrite = True)
+        else:
+            logger.info("Populating sighltines from previously-saved .fits files...")
+            selection_kwargs = {"fname": program_directory + "/sightline_outputs/stars_{}.fits".format(i)}
+            sightlines.append(Sightline(stars, (163 + i, -8.5), dust, select_stars = (Sightline.populate_from_file, selection_kwargs)))
+
+        logstring = "\t Sightline {i}: Nstar = {nstar}, Ndim = {nbin}, Nvar = {nvar}".format(
+                            i = i, nstar = sightlines[i].nsig, nbin = sightlines[i].ndim, nvar = sightlines[i].ndim + sightlines[i].ndim * sightlines[i].nsig)
+        logstring += "; method = {}".format(select_stars)
+        
 
     logger.info("--- Running Model ---")
     logger.info("Starting MCMC Setup...")
@@ -68,25 +90,25 @@ def pipeline(config):
     run_mcmc = getattr(mcmc_module, config["RUN_MCMC"]["METHOD"])
     mcmc_config = config["RUN_MCMC"]["PARAMETERS"]
 
-    mcmc_file = program_directory + "/mcmc_output.h5"
-    if True:
-        pool = None
-        logger.info("Running MCMC...")
+    if args.run_MCMC == "true":
+        for i in range(len(sightlines)):
+            mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
+            pool = Pool(12)
+            logger.info("Running MCMC...")
+            sampler = run_mcmc(
+                sightlines[i], mcmc_config, pool=pool, filename=mcmc_file
+            )
 
-        mcmc_file = program_directory + "/mcmc_output.h5"
-        sampler = run_mcmc(
-            sightlines[0], mcmc_config, pool=pool, filename=mcmc_file
-        )
-
-    reader = load_from_hdf5(mcmc_file)
     for i in range(1):
+        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
+        reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
-        for j in range(0, sightlines[0].ndim + sightlines[0].ndim * sightlines[0].nsig, 1):
-            fig, ax = plot_walkers(chain, j)
-            fig.savefig(program_directory+ '/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
-            plt.close()
-        fig, ax = plot_signals_sample(chain, sightlines[i])
-        fig.savefig(program_directory + '/signals_sl{i}.jpg'.format(i=i, j=j))
+        # for j in range(0, sightlines[i].ndim + sightlines[i].ndim * sightlines[i].nsig, 1):
+        #     fig, ax = plot_walkers(chain, j)
+        #     fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
+        #     plt.close()
+        fig, ax = plot_signals_sample_fg(chain, sightlines[i])
+        fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
 
 
@@ -103,8 +125,10 @@ def parse_args():
         "--default", type=str, help="Default configuration file", default="DEFAULTS"
     )
     parser.add_argument("--run_pipeline", type=str, help= "Run pipeline", default="true")
-    parser.add_argument("--load_chains", type=str, help = "Load chains from a previous run?", default = "false")
-    parser.add_argument("--make_plots", type=str, help = "Make plots using specified plotting functions", default = "false")
+    parser.add_argument("--stars_to_files", type = str, help = 'Save sightline input stars to .fits files', default = 'true')
+    parser.add_argument("--populate_from_files", type = str, help = 'Populate sightlines from previously-saved .fits files', default = 'false')
+    parser.add_argument("--run_MCMC", type=str, help = "Run MCMC? Otherwise, load chains from a previous run", default = "true")
+    parser.add_argument("--make_plots", type=str, help = "Make plots using specified plotting functions", default = "true")
     return parser.parse_args()
 
 

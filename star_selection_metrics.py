@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def selectOnEW(tab, vector, select_first = None, norm_vals = None, plot = False):
+from scipy.signal import correlate, correlation_lags
+
+def select_on_EW(tab, vector = (0.05, 0.05), select_first = None, norm_vals = None, plot = False, **kwargs):
     """Selects stars based on EW"""
     ew = tab['DIB_EQW']
     dist = tab['DIST']
@@ -58,3 +60,36 @@ def selectOnEW(tab, vector, select_first = None, norm_vals = None, plot = False)
                 select_below = False
 
     return selection 
+
+
+def select_on_emission(tab, emission = None, threshold = 0.03, ref_point = (167.4, -8.3), **kwargs):
+    b_em, l_em = emission.world[0, :, :][1:]
+    b_em, l_em = b_em[:, 0], l_em[0, :]
+    em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
+    em_star_indices = np.array([[ np.argmin((tab['GLAT'][i] - b_em.value)**2), np.argmin((tab['GLON'][i] - l_em.value)**2)] for i in range(len(tab))])
+
+    reference_point = emission.unmasked_data[:, em_j, em_i]
+    corr_lags = correlation_lags(emission.shape[0], emission.shape[0])
+    zpoint = corr_lags == 0
+    correlation_image = np.zeros((emission.shape[1], emission.shape[2]))
+
+    for i in range(emission.shape[1]):
+        for j in range(emission.shape[2]):
+            correlation_image[i, j] = correlate(emission.unmasked_data[:, i, j] / np.nansum(np.abs(emission.unmasked_data[:, i, j])), 
+                                                reference_point / np.nansum(np.abs(reference_point)))[zpoint]
+    
+    stars_CO_correlation = correlation_image[em_star_indices[:, 0], em_star_indices[:, 1]]
+
+    star_selection = stars_CO_correlation > threshold
+    return star_selection
+
+def select_stars(tab, **kwargs):
+    tab = tab[select_on_emission(tab,  **kwargs)]
+    tab = tab[select_on_EW(tab, **kwargs)]
+    tab['GLON_TRUE'] = np.copy(tab['GLON'])
+    tab['GLAT_TRUE'] = np.copy(tab['GLAT'])
+    tab['GLON'] = 167.4 + np.random.normal(scale = 0.4, size = len(tab))
+    tab['GLAT'] = -8.3 + np.random.normal(scale = 0.4, size = (len(tab)))
+
+    return tab
+

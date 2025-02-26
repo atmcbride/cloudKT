@@ -44,11 +44,12 @@ def log_prior_davdd_reg_group(theta, sightline = None, width_factor = 3, **kwarg
     return lp_val
 
 
+
 class Logprior_Foreground:
     def __init__(self, sightline, **kwargs):
         l = sightline.l
         b = sightline.b
-        self.distance = sightline.stars("DIST")
+        self.distance = sightline.bins[1:]
         self.pointfit = self.polynomial2d(l, b)
         self.pointfit_width = 2.404363059339516
 
@@ -70,17 +71,17 @@ class Logprior_Foreground:
         v = np.copy(theta[:sightline.ndim])
         foreground = self.distance <= foreground_distance
         prior_val = np.zeros(self.distance.shape)
-        prior_val[foreground] = np.nansum(- 0.5 * np.nansum((v - self.pointfit.item)**2 / (self.pointfit_width**2)))
-        return prior_val.item()
+        prior_val[foreground] = (- 0.5 * (v - self.pointfit)**2 / (self.pointfit_width**2))[foreground]
+        return np.nansum(prior_val)
         
-    def logprior_foreground_av(self, theta, sightline = None, foreground_distance = 400):
-        av = np.copy(theta[sightline.ndim]).reshape(-1, sightline.ndim)
+    def logprior_foreground_av(self, theta, sightline = None, foreground_distance = 401):
+        av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
         foreground = self.distance <= foreground_distance
-        prior_val = np.zeros(self.distance.shape)
-        ampfit = (0.01928233, 0.01431857)
-        avf = lambda x, mu, sigma :  -(x - mu)**2 / (2 * sigma**2)
-        prior_val[foreground] = - 0.5 * np.nansum((av - ampfit[0])**2 / (ampfit[1]**2))
-        return prior_val.item()
+        if np.any(av[:, foreground] > 0.8):
+            return -np.inf
+        return 0.0
+    
+
 
 def log_prior(theta, sightline = None, log_priors = [],  **kwargs):
     log_prior_value = 0
