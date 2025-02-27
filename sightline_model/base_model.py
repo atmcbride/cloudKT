@@ -21,10 +21,32 @@ class BaseModel:
         self.window = (self.wavs > lambda0 - 10) & (self.wavs < lambda0 + 10)
         self.wavs_window = self.wavs[self.window]
         self.medres_meta = None
-        self.alternative_data_processing = None
+
+        if not hasattr(self, "alternative_data_processing"):
+            self.alternative_data_processing = None
+        if not hasattr(self, "star_selection_function"):
+            self.star_selection_function = None
+
+    def load_residual_from_file(self, star, star_rv = None, reprocess_uncertainty = True, use_MADGICS = False, **kwargs):
+            if star_rv is None:
+                star_rv = star["VHELIO_AVG"]
+            res_hdul = fits.open(self.get_ca_res(star["FILE"]))
+            sig = res_hdul[1].data
+            err = res_hdul[2].data
+
+            if reprocess_uncertainty:
+                err = self.reprocess_errs(res_hdul, star['VHELIO_AVG'])
+
+            l, b = star["GLON"], star["GLAT"]
+
+            if use_MADGICS:
+                res_hdul_m = fits.open(self.get_madgics_res(star["FILE"]))
+                sig = res_hdul_m[1].data[0, 125:]
+
+            return sig, err
 
     @staticmethod
-    def select_near_point(tab, l, b, radius=1):
+    def select_near_point(tab, l, b, radius=1, **kwargs):
         """
         Selects stars within a specified radius of a position in l and b
         """
@@ -147,3 +169,5 @@ class BaseModel:
         row = meta[rowselect]
         filename = row['FNAME'].item()
         return medres_dir + filename
+    
+

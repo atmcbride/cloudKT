@@ -3,26 +3,42 @@ import logging
 
 from utilities import load_module
 
-logger = logging.GetLogger(__name__)
+logger = logging.getLogger(__name__)
 
-def initialize_sightlines(stars, dust, CO, HI, sightline_config):
+def initialize_sightlines(stars, dust, emission_CO, emission_HI, sightline_config):
     sightlines = []
     
-    sightline_module = load_module(sightline_config["MODULE"])
-    Sightline = getattr(sightline_module, sightline_config["CLASS"])
+    sightline_module = load_module(sightline_config["SIGHTLINE"]["MODULE"])
+    Sightline = getattr(sightline_module, sightline_config["SIGHTLINE"]["CLASS"])
 
     if sightline_config["DATA_REPROCESS"] != "none":
         reprocess_module = load_module(sightline_config["DATA_REPROCESS"]["MODULE"])
         reprocess_function = getattr(reprocess_module, sightline_config["DATA_REPROCESS"]["FUNCTION"])
-        Sightline.
-        pass
+        Sightline.alternative_data_processing = reprocess_function
+    data_processing_kwargs = sightline_config["DATA_REPROCESS"]["PARAMETERS"]
 
     if sightline_config["STAR_SELECTION"] != "none":
-        pass
+        star_selection_module = load_module(sightline_config["STAR_SELECTION"]["MODULE"])
+        star_selection_function = getattr(star_selection_module, sightline_config["STAR_SELECTION"]["FUNCTION"])
+        Sightline.select_stars = star_selection_function
+    star_selection_kwargs = sightline_config["STAR_SELECTION"]["PARAMETERS"]
+    star_selection_kwargs["emission"] = emission_CO
 
 
+
+    for i in range(sightline_config["N_SIGHTLINES"]):
+        sightline = Sightline(stars, dust, data_processing_kwargs = data_processing_kwargs, star_selection_kwargs = star_selection_kwargs)
+        sightlines.append(sightline)
 
     return sightlines
+
+
+
+# def select_from_seed_stars():
+#     return
+
+# def select_from_spatial_grid():
+#     return
 
 
 # def previous_version():

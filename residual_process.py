@@ -124,7 +124,13 @@ def generateCleanedResidual(aspcap, medres, apstar, rv):
 
 
 
-def generateClippedResidual(self, aspcap, medres, apstar, rv, k = 3, **kwargs):
+def generateClippedResidual(self, star, rv = None, k = 3, **kwargs):
+    if rv is None:
+        rv = star["VHELIO_AVG"]
+    aspcap = fits.open(self.getASPCAP(star))
+    apstar = fits.open(self.getapStar(aspcap))
+    medres = fits.open(
+        self.get_medres(star["TEFF"], star["LOGG"], star["M_H"]))
 
     dibfn = lambda x, mu, sigma, a: 1-a * np.exp(-0.5 * (x - mu)**2 / sigma**2)
     def sigma_clip_mask(y, x = self.wavs, k = 2.5):

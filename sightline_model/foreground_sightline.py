@@ -18,16 +18,15 @@ sigma0 = 1.15
 
 
 class ForegroundSightline(BaseModel):
-    def __init__(self, stars, coordinates, dust_data, select_stars = (None, None),dfore = 401, **kwargs):
+    def __init__(self, stars, dust_data, star_selection_kwargs = None, coordinates = None, dfore = 401, **kwargs):
         super().__init__(self, stars, **kwargs)
         
-        if select_stars[0] is None:
+        if self.select_stars is None:
             l, b = coordinates
             self.stars = stars[self.select_near_point(stars, l, b, **kwargs)]
             self.stars = stars[stars['DIST'] > dfore]
         else:
-            select_stars_fn, select_stars_kwargs = select_stars
-            stars = select_stars_fn(stars, **select_stars_kwargs)
+            stars = self.select_stars(stars, **star_selection_kwargs)
             self.stars = stars[stars['DIST'] > dfore]
         dist = self.stars['DIST']
 
@@ -49,35 +48,36 @@ class ForegroundSightline(BaseModel):
 
         self.test_init_signals = self.model_signals(self.rvelo, self.dAVdd)
 
-    def get_DIBs(self, dust_data, **kwargs):
+    def get_DIBs(self, dust_data, use_MADGICS=False, **kwargs):
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
         signal_errs = np.zeros((len(self.stars), len(self.wavs_window)))
         dAVdd = np.zeros((len(self.stars), len(self.bins) - 1))
         dAVdd_all = np.zeros((len(self.stars), len(self.bins) - 1))
         dAVdd_mask = np.zeros((len(self.stars), len(self.bins) - 1)).astype(bool)
+
         if self.alternative_data_processing is not None: 
             # alternative data processing must be assigned outside of class;
             # takes self, aspcap, medres, apstar, star_rv, and **kwargs
             for i in range(len(self.stars)):
-                    star = self.stars[i]
-                    star_rv = star["VHELIO_AVG"]
-                    aspcap = fits.open(self.getASPCAP(star))
-                    apstar = fits.open(self.getapStar(aspcap))
-                    medres = fits.open(
-                        self.get_medres(star["TEFF"], star["LOGG"], star["M_H"])
-                    )
-                    sig, err = self.alternative_data_processing(
-                        self, aspcap, medres, apstar, star_rv, **kwargs
-                    )
-                    signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
+                star = self.stars[i]
 
-                    l, b = star["GLON"], star["GLAT"]
-                    dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
-                        l, b, star["DIST"], self.bins, dust_data, **kwargs
-                    )
+                sig, err = self.alternative_data_processing(
+                    star, **kwargs
+                )
+                signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
+
+                l, b = star["GLON"], star["GLAT"]
+                dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
+                    l, b, star["DIST"], self.bins, dust_data)
 
         else:
-            pass
+            for i in range(len(self.stars)):
+                sig, err = self.load_residual_from_file(star, star_rv = None, use_MADGICS = use_MADGICS)
+                signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
+                l, b = star["GLON"], star["GLAT"]
+                dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
+                    l, b, star["DIST"], self.bins, dust_data)
+
         self.signals = signals
         self.signal_errs = signal_errs
         self.dAVdd = dAVdd

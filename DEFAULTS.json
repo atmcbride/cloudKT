@@ -52,8 +52,18 @@
                 }
             },
             "N_SIGHTLINES": 1,
-            "DATA_REPROCESS": "none",
-            "STAR_SELECTION": "none"
+            "DATA_REPROCESS": {
+                "MODULE": "none",
+                "FUNCTION": "none",
+                "PARAMETERS":{}
+        },
+            "STAR_SELECTION": {
+                "MODULE": "none",
+                "FUNCTION": "none",
+                "PARAMETERS":{
+                    "radius": 0.4
+                }
+            }
         }
     },
 
