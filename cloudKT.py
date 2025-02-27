@@ -96,6 +96,7 @@ def pipeline(config):
 
     if args.run_MCMC == "true":
         for i in range(len(sightlines)):
+            logger.info("Running MCMC for sightline {}...".format(i))
             mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
             pool = Pool(12)
             logger.info("Running MCMC...")
@@ -114,6 +115,16 @@ def pipeline(config):
         fig, ax = plot_signals_sample_fg(chain, sightlines[i])
         fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
+
+
+    for i in range(len(sightlines)):
+        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
+        reader = load_from_hdf5(mcmc_file)
+        chain = reader.get_chain()
+        postprocessing_module = load_module("postprocessing")
+        chi2_statistics = getattr(postprocessing_module, "chi2_statistics")
+        per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sightlines[i], chain)
+        logger.info("Sightline {} chi2 ".format(i), sightline_chi2)
 
 
 

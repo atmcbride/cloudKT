@@ -61,7 +61,7 @@ def run_mcmc(sightline, mcmc_config, steps = 1000, nwalkers = 100, pool = None, 
 
     print('NDIM:', ndim, 'NSTAR:', nstar, 'INITSHAPE:', init.shape)
 
-    sampler.run_mcmc(init, steps, progress = True, store = True);
+    sampler.run_mcmc(init, steps, progress = False, store = True);
 
     return sampler
 
