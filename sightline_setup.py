@@ -34,6 +34,8 @@ def initialize_sightlines(stars, dust, emission_CO, emission_HI, sightline_confi
 
     for i in range(sightline_config["N_SIGHTLINES"]):
         if sightline_config["POPULATE_FROM_FILES"] == True:
+            if i == 0:
+                print('populating from files!')
             star_selection_kwargs = {"fname": program_directory + "/sightline_outputs/stars_{}.fits".format(i)}
 
 

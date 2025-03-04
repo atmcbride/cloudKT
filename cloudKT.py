@@ -26,6 +26,7 @@ from residual_process import generateClippedResidual
 
 from plotting.plot_walkers import plot_walkers
 from plotting.plot_signals import plot_signals_sample, plot_signals_sample_fg
+from plotting.plot_velo_dist import plot_velo_dist
 from mcmc_framework import load_from_hdf5
 
 def main():
@@ -122,6 +123,11 @@ def pipeline(config):
         fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
 
+
+        # fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sightlines[i])
+        # fig.savefig(program_directory + "/figures/v_d_sl_{i}.jpg".format(i=i))
+        # plt.close()
+
     metrics_out = {}
     for i in range(len(sightlines)):
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
@@ -135,6 +141,16 @@ def pipeline(config):
                                             "std_chi2": std_star_chi2, "perstar_chi2": list(per_star_chi2)}
     with open(program_directory + "/sightline_outputs/sightline_metrics.json", mode = "a") as f:
         json.dump(metrics_out, f, indent = 2)
+
+    
+    for i in range(len(sightlines)):
+        sl = sightlines[i]
+        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
+        reader = load_from_hdf5(mcmc_file)
+        chain = reader.get_chain()
+        fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sightlines[i])
+        fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
+        plt.close()
 
     logger.info("Successfully ran through cloudKT.pipeline!")
 

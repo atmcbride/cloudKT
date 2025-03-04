@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import correlate, correlation_lags
 
 def log_likelihood(theta, sightline = None, **kwargs):
     v = theta[ :len(sightline.voxel_dAVdd)]
@@ -81,7 +82,34 @@ class Logprior_Foreground:
             return -np.inf
         return 0.0
     
+class Logprior_Average_Extinction:
+    def __init__(self, dust, emission, threshold = 0.03, ref_point = (167.4, -8.3)):
+        b_em, l_em = emission.world[0, :, :][1:]
+        b_em, l_em = b_em[:, 0], l_em[0, :]
+        em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
 
+        dust_coords = np.array(dust.l.ravel(), dust.b.ravel())
+        dust_em_idx = np.array([[ np.argmin((tab['GLAT'][i] - b_em.value)**2), np.argmin((tab['GLON'][i] - l_em.value)**2)] for i in range(len(tab))])
+
+
+        reference_point = emission.unmasked_data[:, em_j, em_i]
+        corr_lags = correlation_lags(emission.shape[0], emission.shape[0])
+        zpoint = corr_lags == 0
+        correlation_image = np.zeros((emission.shape[1], emission.shape[2]))
+        for i in range(emission.shape[1]):
+            for j in range(emission.shape[2]):
+                correlation_image[i, j] = correlate(emission.unmasked_data[:, i, j] / np.nansum(np.abs(emission.unmasked_data[:, i, j])), 
+                                                    reference_point / np.nansum(np.abs(reference_point)))[zpoint]
+        correlation_selection = np.where(correlation_image > threshold)
+
+
+
+        self.emission.unmasked_data[:, correlation_selection[0], correlation_selection[1]]
+
+
+        
+    def log_prior_avg_av(self, theta, sightline=None):
+        pass
 
 def log_prior(theta, sightline = None, log_priors = [],  **kwargs):
     log_prior_value = 0
