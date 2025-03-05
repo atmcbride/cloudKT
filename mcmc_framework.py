@@ -6,6 +6,7 @@ from functools import partial
 
 from utilities import load_module
 
+
 logger = logging.getLogger(__name__)
 
 def run_mcmc(sightline, mcmc_config, steps = 1000, nwalkers = 100, pool = None, filename = None):

@@ -83,33 +83,49 @@ class Logprior_Foreground:
         return 0.0
     
 class Logprior_Average_Extinction:
-    def __init__(self, dust, emission, threshold = 0.03, ref_point = (167.4, -8.3)):
+    def __init__(self, dust, emission, sightline = None, threshold = 0.03, ref_point = (167.4, -8.3)):
         b_em, l_em = emission.world[0, :, :][1:]
         b_em, l_em = b_em[:, 0], l_em[0, :]
         em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
-
-        dust_coords = np.array(dust.l.ravel(), dust.b.ravel())
-        dust_em_idx = np.array([[ np.argmin((tab['GLAT'][i] - b_em.value)**2), np.argmin((tab['GLON'][i] - l_em.value)**2)] for i in range(len(tab))])
-
-
         reference_point = emission.unmasked_data[:, em_j, em_i]
         corr_lags = correlation_lags(emission.shape[0], emission.shape[0])
         zpoint = corr_lags == 0
+
         correlation_image = np.zeros((emission.shape[1], emission.shape[2]))
         for i in range(emission.shape[1]):
             for j in range(emission.shape[2]):
                 correlation_image[i, j] = correlate(emission.unmasked_data[:, i, j] / np.nansum(np.abs(emission.unmasked_data[:, i, j])), 
                                                     reference_point / np.nansum(np.abs(reference_point)))[zpoint]
         correlation_selection = np.where(correlation_image > threshold)
+        correlation_l, correlation_b = l_em[correlation_selection[1]], b_em[correlation_selection[0]]
 
-
-
-        self.emission.unmasked_data[:, correlation_selection[0], correlation_selection[1]]
-
-
+        dust_indices = np.array([dust.find_nearest_angular(correlation_l[i].value, correlation_b[i].value) for i in range(len(correlation_l))])
+        # dust_coordinates = (dust.l_1d[dust_indices[:, 0]], dust.b_1d[dust_indices[:, 1]]) # for debuging 
         
-    def log_prior_avg_av(self, theta, sightline=None):
-        pass
+        dust_profiles = dust.dustmap[dust_indices[:, 1], dust_indices[:, 0]] # remember that the dustmap is in b, l, d
+        avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
+
+        distance = dust.distance
+        n_bins = len(sightline.bins) - 1
+        avg_dAVdd = np.zeros(n_bins)
+        for i in range(len(avg_dAVdd)):
+            bin_min, bin_max = sightline.bins[i], sightline.bins[i + 1]
+            avg_dAVdd[i] = np.sum(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)])
+
+        self.avg_dAVdd = avg_dAVdd
+        
+    def log_prior_avg_av(self, theta, sightline=None, width_factor= 10):
+        av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
+        mask = sightline.dAVdd_mask
+        av[mask] = np.nan
+        avmed = np.nanmedian(av, axis = 0)
+        avstd = sightline.voxel_dAVdd_std
+        lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / (2 * (width_factor * self.avg_dAVdd)**2)))
+        return lp_val
+
+
+
+
 
 def log_prior(theta, sightline = None, log_priors = [],  **kwargs):
     log_prior_value = 0

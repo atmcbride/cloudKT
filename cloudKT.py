@@ -82,7 +82,7 @@ def pipeline(config):
     for i in range(len(sightlines)):
         if args.stars_to_files == "true":
             if not os.path.exists(program_directory + "/sightline_outputs/"):
-                os.makedir(program_directory + "/sightline_outputs/")
+                os.mkdir(program_directory + "/sightline_outputs/")
             sightlines[i].stars.write(program_directory + "/sightline_outputs/stars_{}.fits".format(i), overwrite = True)
     #     else:
     #         logger.info("Populating sightlines from previously-saved .fits files...")
@@ -142,6 +142,8 @@ def pipeline(config):
     with open(program_directory + "/sightline_outputs/sightline_metrics.json", mode = "a") as f:
         json.dump(metrics_out, f, indent = 2)
 
+    if not os.path.exists(program_directory + "/figures/"):
+        os.mkdir(program_directory + "/figures/")
     
     for i in range(len(sightlines)):
         sl = sightlines[i]
