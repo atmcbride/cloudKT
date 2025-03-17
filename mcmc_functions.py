@@ -47,7 +47,7 @@ def log_prior_davdd_reg_group(theta, sightline = None, width_factor = 3, **kwarg
 
 
 class Logprior_Foreground:
-    def __init__(self, sightline, **kwargs):
+    def __init__(self, sightline, *args, **kwargs):
         l = sightline.l
         b = sightline.b
         self.distance = sightline.bins[1:]
@@ -83,7 +83,7 @@ class Logprior_Foreground:
         return 0.0
     
 class Logprior_Average_Extinction:
-    def __init__(self, dust, emission, sightline = None, threshold = 0.03, ref_point = (167.4, -8.3)):
+    def __init__(self, sightline, dust, emission, threshold = 0.03, ref_point = (167.4, -8.3)):
         b_em, l_em = emission.world[0, :, :][1:]
         b_em, l_em = b_em[:, 0], l_em[0, :]
         em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
@@ -108,6 +108,7 @@ class Logprior_Average_Extinction:
         distance = dust.distance
         n_bins = len(sightline.bins) - 1
         avg_dAVdd = np.zeros(n_bins)
+        std_avg_dAVdd = np.zeros(n_bins)
         for i in range(len(avg_dAVdd)):
             bin_min, bin_max = sightline.bins[i], sightline.bins[i + 1]
             avg_dAVdd[i] = np.sum(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)])

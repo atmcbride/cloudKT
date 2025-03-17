@@ -21,7 +21,7 @@ args = None
 from star_selection_metrics import select_stars
 from residual_process import generateClippedResidual
 
-
+# /uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/modelfiles/cloudKT_alpha_runs/
 
 
 from plotting.plot_walkers import plot_walkers
@@ -108,7 +108,7 @@ def pipeline(config):
             pool = Pool(12)
             logger.info("Running MCMC...")
             sampler = run_mcmc(
-                sightlines[i], mcmc_config, pool=pool, filename=mcmc_file
+                sightlines[i], mcmc_config, dust, emission_CO, pool=pool, filename=mcmc_file
             )
 
     for i in range(len(sightlines)):
