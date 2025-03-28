@@ -1,0 +1,10 @@
+/uufs/astro.utah.edu/common/home/u1371365/.local/lib/python3.10/site-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+usage: cloudKT.py [-h] [--config CONFIG] [--default DEFAULT]
+                  [--run_pipeline RUN_PIPELINE]
+                  [--stars_to_files STARS_TO_FILES]
+                  [--populate_from_files POPULATE_FROM_FILES]
+                  [--run_MCMC RUN_MCMC] [--make_plots MAKE_PLOTS]
+                  [--init_comment INIT_COMMENT]
+                  directory
+cloudKT.py: error: unrecognized arguments: --stars_To_file=true = /uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/modelfiles/cloudKT_alpha_runs/2025-03-19a

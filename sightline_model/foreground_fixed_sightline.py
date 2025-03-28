@@ -17,7 +17,7 @@ lambda0 = 15272.42
 sigma0 = 1.15
 
 
-def fg_polynomial2d(self, x1, x2, theta = None, uncert = None):  
+def fg_polynomial2d(x1, x2, theta = None, uncert = None):  
     if theta is None:
         theta = np.array([5.03964666, -1.04129592, -0.72842925, -0.20292219,  0.0206567,  -0.14442016])
     if uncert is None:
@@ -202,7 +202,7 @@ class ForegroundFixedSightline(BaseModel):
         voxel_DIB_unscaled = np.exp(-(wavs_grid - peak_wavelength[:, np.newaxis])**2 / (2 * sigma0**2))
         amp = self.differentialAmplitude(dAVdd, binsep)
 
-        def single_signal(amp, bindex):
+        def single_signal(amp, bindex, voxel_DIB_unscaled = voxel_DIB_unscaled):
             amp[bindex :] = 0 # THIS MIGHT NEED TO BE -1
 
             voxel_DIB_scaled = -voxel_DIB_unscaled *  amp[:, np.newaxis] 
@@ -218,7 +218,7 @@ class ForegroundFixedSightline(BaseModel):
             amp = self.differentialAmplitude(dAVdd_star, 1)
 
             # ADDED 2025.03.17:
-            signals = np.zeros((len(self.stars), len(self.wavs_window)))
+            # signals = np.zeros((len(self.stars), len(self.wavs_window)))
 
             rvelo_per_star = np.copy(rvelo)
 
@@ -231,7 +231,7 @@ class ForegroundFixedSightline(BaseModel):
 
             bin_index = self.bin_inds[i]
             # signals[i, :] = single_signal(bin_index)
-            signals[i, :] = single_signal(amp, bin_index)
+            signals[i, :] = single_signal(amp, bin_index, voxel_DIB_unscaled = voxel_DIB_unscaled)
         return signals
     
 

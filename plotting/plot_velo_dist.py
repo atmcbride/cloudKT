@@ -1,5 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt
+import astropy.coordinates as coords
 
 def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None, plot_lines = False, plot_box = False, plot_violin = True, bestprob = False, lnprob = None):
     samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
@@ -113,3 +114,29 @@ def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None
     # med_velo
 
     return fig, ax, dist_xx, med_velo, std_velo
+
+def transform_spectral_axis(cube):
+    # https://www.ipac.caltech.edu/iso/lws/vhelio.html
+    vlsr = cube.spectral_axis.value
+    lmean = 0.5 * np.sum(cube.world_extrema[0])
+    bmean = 0.5 * np.sum(cube.world_extrema[1])
+    ut = -np.cos(bmean) * np.cos(lmean)
+    vt = np.cos(bmean) * np.sin(lmean)
+    wt = np.sin(bmean)
+    vhelio = vlsr -  ( -10.27 * ut ) + ( 15.32 * vt ) + ( 7.74 * wt )
+    return vhelio
+
+def plot_velo_dist_busy(chain, sl, emission = None):
+    fig, ax = plt.subplots(figsize = (8,6))
+    fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax))
+
+    aux1 = ax.inset_axes([0, -0.1, 1, 0.1])
+    aux2 = ax.inset_axes([0, 1, 1, 0.1])
+    aux3 = ax.inset_axes([1, 0, 0.1, 1])
+
+    vhelio = transform_spectral_axis(emission)
+    aux3.plot
+
+
+    
+    return fig, ax

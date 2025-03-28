@@ -21,12 +21,13 @@ args = None
 from star_selection_metrics import select_stars
 from residual_process import generateClippedResidual
 
-# /uufs/chpc.utah.edu/common/home/astro/zasowski/mcbride/modelfiles/cloudKT_alpha_runs/
+# zas
 
 
 from plotting.plot_walkers import plot_walkers
 from plotting.plot_signals import plot_signals_sample, plot_signals_sample_fg
 from plotting.plot_velo_dist import plot_velo_dist
+from plotting.plot_velo import plot_velo
 from mcmc_framework import load_from_hdf5
 
 def main():
@@ -115,10 +116,11 @@ def pipeline(config):
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
-        # for j in range(0, sightlines[i].ndim + sightlines[i].ndim * sightlines[i].nsig, 1):
-        #     fig, ax = plot_walkers(chain, j)
-        #     fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
-        #     plt.close()
+        for j in range(0, sightlines[i].ndim, 1):
+            fig, ax = plot_walkers(chain, j)
+            fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
+            plt.close()
+
         fig, ax = plot_signals_sample_fg(chain, sightlines[i])
         fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
@@ -153,6 +155,10 @@ def pipeline(config):
         fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sightlines[i])
         fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
+
+        fig, ax, dist_xx, med_velo, std_velo = plot_velo(chain, sightlines[i])
+        fig.savefig(program_directory + "/figures/veloposterior_sl_{i}.jpg".format(i=i))
+        plt.close()      
 
     logger.info("Successfully ran through cloudKT.pipeline!")
 
