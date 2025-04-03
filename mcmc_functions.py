@@ -104,6 +104,7 @@ class Logprior_Average_Extinction:
         
         dust_profiles = dust.dustmap[dust_indices[:, 1], dust_indices[:, 0]] # remember that the dustmap is in b, l, d
         avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
+        std_dust_profile = np.nanstd(dust_profiles, axis = 0, ddof = 1)
 
         distance = dust.distance
         n_bins = len(sightline.bins) - 1
@@ -112,7 +113,7 @@ class Logprior_Average_Extinction:
         for i in range(len(avg_dAVdd)):
             bin_min, bin_max = sightline.bins[i], sightline.bins[i + 1]
             avg_dAVdd[i] = np.nansum(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)])
-            std_avg_dAVdd[i]  = np.nanstd(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)], ddof = 1)
+            std_avg_dAVdd[i]  = np.sqrt(np.nansum(std_dust_profile[(distance > bin_min) & (distance <= bin_max)]**2)) / np.sum((distance > bin_min) & (distance <= bin_max))
 
         self.avg_dAVdd = avg_dAVdd
         self.std_dAVdd = std_avg_dAVdd
