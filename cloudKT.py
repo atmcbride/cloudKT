@@ -26,7 +26,7 @@ from residual_process import generateClippedResidual
 
 from plotting.plot_walkers import plot_walkers
 from plotting.plot_signals import plot_signals_sample, plot_signals_sample_fg
-from plotting.plot_velo_dist import plot_velo_dist
+from plot_velo_dist import plot_velo_dist, plot_velo_dist_busy
 from plotting.plot_velo import plot_velo
 from mcmc_framework import load_from_hdf5
 
@@ -152,9 +152,15 @@ def pipeline(config):
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
+        per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sl, chain)
+
         fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sightlines[i])
         fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
+
+        fig, ax = plot_velo_dist_busy(chain, sightlines[i], dust = dust, emission = emission_CO, avprior = None, metrics = per_star_chi2)
+        fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i))
+
 
         fig, ax, dist_xx, med_velo, std_velo = plot_velo(chain, sightlines[i])
         fig.savefig(program_directory + "/figures/veloposterior_sl_{i}.jpg".format(i=i))

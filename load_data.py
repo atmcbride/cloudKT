@@ -146,3 +146,5 @@ def apply_restrictions(
         elif entry[-1] == "!=":
             select &= tab[key] != entry[0]
     return select
+
+

@@ -1,6 +1,10 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import astropy.coordinates as coords
+import astropy.units as u
+from scipy.signal import correlate, correlation_lags
+from mcmc_functions import Logprior_Average_Extinction
+import json
 
 def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None, plot_lines = False, plot_box = False, plot_violin = True, bestprob = False, lnprob = None):
     samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
@@ -37,7 +41,7 @@ def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None
 
 
     med_dAV_dd = medians[ndim:]
-    med_dAV_dd = stdevs[ndim:]
+    std_dAV_dd = stdevs[ndim:] #CAUGHT 04.01 THIS WAS ASSIGNED TO med_dAV_dd
 
     perc16, perc50,  perc84 = (np.percentile(samples[min_walker_val:, :], 16, axis = 0), 
                                np.percentile(samples[min_walker_val:, :], 50, axis = 0),
@@ -115,28 +119,102 @@ def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None
 
     return fig, ax, dist_xx, med_velo, std_velo
 
-def transform_spectral_axis(cube):
-    # https://www.ipac.caltech.edu/iso/lws/vhelio.html
+# def transform_spectral_axis1(cube):
+#     # https://www.ipac.caltech.edu/iso/lws/vhelio.html
+#     vlsr = cube.spectral_axis.value
+#     lmean = 0.5 * np.sum(cube.world_extrema[0])
+#     bmean = 0.5 * np.sum(cube.world_extrema[1])
+#     ut = -np.cos(bmean) * np.cos(lmean)
+#     vt = np.cos(bmean) * np.sin(lmean)
+#     wt = np.sin(bmean)
+#     vhelio = vlsr -  ( -10.27 * ut ) + ( 15.32 * vt ) + ( 7.74 * wt )
+#     return vhelio
+
+def transform_spectral_axis2(cube):
     vlsr = cube.spectral_axis.value
     lmean = 0.5 * np.sum(cube.world_extrema[0])
     bmean = 0.5 * np.sum(cube.world_extrema[1])
-    ut = -np.cos(bmean) * np.cos(lmean)
-    vt = np.cos(bmean) * np.sin(lmean)
-    wt = np.sin(bmean)
-    vhelio = vlsr -  ( -10.27 * ut ) + ( 15.32 * vt ) + ( 7.74 * wt )
+    coord0 = coords.SkyCoord(l = lmean, b = bmean, distance = 500 * u.pc, radial_velocity = 0*u.km/u.s, pm_l_cosb = 0*u.arcsec/u.year, pm_b = 0*u.arcsec/u.year, frame = "galacticlsr")
+    coord0_ICRS = coord0.transform_to(coords.ICRS)
+    vhelio = vlsr + coord0_ICRS.radial_velocity.to(u.km/u.s).value
     return vhelio
 
-def plot_velo_dist_busy(chain, sl, emission = None):
-    fig, ax = plt.subplots(figsize = (8,6))
+def get_typical_emission_profile(emission):
+    threshold = 0.03
+    ref_point = (167.4, -8.3)
+    b_em, l_em = emission.world[0, :, :][1:]
+    b_em, l_em = b_em[:, 0], l_em[0, :]
+    em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
+    reference_point = emission.unmasked_data[:, em_j, em_i]
+    corr_lags = correlation_lags(emission.shape[0], emission.shape[0])
+    zpoint = corr_lags == 0
+
+    correlation_image = np.zeros((emission.shape[1], emission.shape[2]))
+    for i in range(emission.shape[1]):
+        for j in range(emission.shape[2]):
+            correlation_image[i, j] = correlate(emission.unmasked_data[:, i, j] / np.nansum(np.abs(emission.unmasked_data[:, i, j])), 
+                                                reference_point / np.nansum(np.abs(reference_point)))[zpoint]
+    emission_filament = np.copy(emission.unmasked_data[:])
+    emission_filament[:, correlation_image < 0.03] = np.nan
+    return np.nanmedian(emission_filament, axis = (1,2))
+
+
+def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None, metrics = None):
+    fig, ax = plt.subplots(figsize = (10, 10))
     fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax))
 
     aux1 = ax.inset_axes([0, -0.1, 1, 0.1])
-    aux2 = ax.inset_axes([0, 1, 1, 0.1])
+    aux2 = ax.inset_axes([0, 1, 1, 0.4])
     aux3 = ax.inset_axes([1, 0, 0.1, 1])
 
-    vhelio = transform_spectral_axis(emission)
-    aux3.plot
+    samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
+    ndim = len(sl.voxel_dAVdd)
+    walker_max = chain.shape[0]
+    min_walker = -100
+    vel_samples = samples[:, :sl.ndim]
+    avg_av = np.nansum(np.median(sl.dAVdd, axis = 0))
 
+    medians = np.nanmedian(samples[:, :], axis = 0)
+    stdevs = np.nanstd(samples[:, :], ddof = 1, axis = 0)
+
+    med_velo = medians[:ndim]
+    std_velo = stdevs[:ndim]
+
+
+    med_dAV_dd = medians[ndim:]
+    std_dAV_dd = stdevs[ndim:] #CAUGHT 04.01 THIS WAS ASSIGNED TO med_dAV_dd
+
+    if avprior == None:
+        avprior = Logprior_Average_Extinction(sl, dust, emission, )
+        prior_av = avprior.avg_dAVdd
+
+    if metrics is not None:
+        inds = np.digitize(sl.stars['DIST'], sl.bins) 
+        aux1.hlines(metrics, sl.bins[inds -1], sl.bins[inds])
+        aux1.set_xlabel('Distance (pc)')
+        aux1.set_ylabel(r"$\chi^2$")
+
+
+    aux2.hlines(prior_av, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = "solid", label = "Avg prior")
+    aux2.hlines(sl.voxel_dAVdd, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = 'dotted', label = "Mean")
+    # aux2.hlines(med_dAV_dd, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = "dotted", label = "Mean")
+
+    for i in range(len(sl.stars)-1):
+        dmask = sl.stars[i]["DIST"] > sl.bins[:-1]
+        med_dAVdd_masked = np.copy(med_dAV_dd[i * sl.ndim : i * sl.ndim + sl.ndim])
+        med_dAVdd_masked[dmask] = np.nan
+        aux2.hlines(med_dAVdd_masked, sl.bins[:-1], sl.bins[1:], color = "C{}".format(i))
+    aux2.set_ylabel(r'$\delta A_V$')
+    
+    vhelio_em = transform_spectral_axis2(emission)
+    typical_emission = get_typical_emission_profile(emission)
+    aux3.plot(typical_emission, vhelio_em, linestyle = "dashed")
+    aux3.set_xlabel('Intensity \n (K km/s)')
+    
+    aux1.set_xlim(ax.get_xlim())
+    aux2.set_xlim(ax.get_xlim())
+    aux3.set_ylim(ax.get_ylim())
+    
 
     
     return fig, ax

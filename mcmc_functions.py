@@ -121,7 +121,7 @@ class Logprior_Average_Extinction:
         av[mask] = np.nan
         avmed = np.nanmedian(av, axis = 0)
         avstd = sightline.voxel_dAVdd_std
-        lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / (2 * (width_factor * self.avg_dAVdd)**2)))
+        lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / (2 * (width_factor * avstd)**2)))
         return lp_val
 
 
