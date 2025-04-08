@@ -181,8 +181,11 @@ def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None,
     std_velo = stdevs[:ndim]
 
 
-    med_dAV_dd = medians[ndim:]
-    std_dAV_dd = stdevs[ndim:] #CAUGHT 04.01 THIS WAS ASSIGNED TO med_dAV_dd
+    med_dAV_dd = medians[ndim:].reshape(-1, sl.ndim)
+    std_dAV_dd = stdevs[ndim:].reshape(-1, sl.ndim) #CAUGHT 04.01 THIS WAS ASSIGNED TO med_dAV_dd
+    mask = sl.dAVdd_mask
+    med_dAVdd_masked = np.copy(med_dAV_dd)
+    med_dAVdd_masked[mask] = np.nan
 
     if avprior == None:
         avprior = Logprior_Average_Extinction(sl, dust, emission, )
@@ -199,11 +202,8 @@ def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None,
     aux2.hlines(sl.voxel_dAVdd, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = 'dotted', label = "Mean")
     # aux2.hlines(med_dAV_dd, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = "dotted", label = "Mean")
 
-    for i in range(len(sl.stars)-1):
-        dmask = sl.stars[i]["DIST"] > sl.bins[:-1]
-        med_dAVdd_masked = np.copy(med_dAV_dd[i * sl.ndim : i * sl.ndim + sl.ndim])
-        med_dAVdd_masked[dmask] = np.nan
-        aux2.hlines(med_dAVdd_masked, sl.bins[:-1], sl.bins[1:], color = "C{}".format(i))
+    for i in range(len(sl.stars)):
+        aux2.hlines(med_dAVdd_masked[i, :], sl.bins[:-1], sl.bins[1:], color = "C{}".format(i))
     aux2.set_ylabel(r'$\delta A_V$')
     
     vhelio_em = transform_spectral_axis2(emission)

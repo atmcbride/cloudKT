@@ -112,11 +112,15 @@ class Logprior_Average_Extinction:
         std_avg_dAVdd = np.zeros(n_bins)
         for i in range(len(avg_dAVdd)):
             bin_min, bin_max = sightline.bins[i], sightline.bins[i + 1]
-            avg_dAVdd[i] = np.nansum(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)])
-            std_avg_dAVdd[i]  = np.sqrt(np.nansum(std_dust_profile[(distance > bin_min) & (distance <= bin_max)]**2)) / np.sum((distance > bin_min) & (distance <= bin_max))
+            bin_profiles = dust_profiles[:, (distance > bin_min) & (distance <= bin_max)]
+            # avg_dAVdd[i] = np.nansum(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)])
+            # std_avg_dAVdd[i]  = np.sqrt(np.nansum(std_dust_profile[(distance > bin_min) & (distance <= bin_max)]**2)) / np.sum((distance > bin_min) & (distance <= bin_max))
+            avg_dAVdd[i] = np.nanmedian(np.nansum(bin_profiles, axis = 1))
+            std_avg_dAVdd[i] = np.nanstd(np.nansum(bin_profiles, axis = 1), ddof = 1)
 
         self.avg_dAVdd = avg_dAVdd
         self.std_dAVdd = std_avg_dAVdd
+        pass
         
     def log_prior_avg_av(self, theta, sightline=None, width_factor= 10):
         av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
@@ -124,9 +128,8 @@ class Logprior_Average_Extinction:
         av[mask] = np.nan
         avmed = np.nanmedian(av, axis = 0)
         avstd = sightline.voxel_dAVdd_std
-        lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / (2 * (width_factor * self.std_dAVdd)**2)))
+        lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / ((width_factor * self.std_dAVdd)**2)))
         return lp_val
-
 
 
 

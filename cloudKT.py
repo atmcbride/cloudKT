@@ -121,7 +121,9 @@ def pipeline(config):
             fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
             plt.close()
 
-        fig, ax = plot_signals_sample_fg(chain, sightlines[i])
+        fig, ax = plot_signals_sample(chain, sightlines[i])
+        # fig, ax = plot_signals_sample_fg(chain, sightlines[i])
+
         fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
 

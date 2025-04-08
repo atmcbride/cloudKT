@@ -18,7 +18,7 @@ sigma0 = 1.15
 
 
 class ForegroundSightline(BaseModel):
-    def __init__(self, stars, dust_data, star_selection_kwargs = None, coordinates = None, dfore = 401, **kwargs):
+    def __init__(self, stars, dust_data, *args, star_selection_kwargs = None, coordinates = None, dfore = 401, **kwargs):
         super().__init__(self, stars, **kwargs)
         
         if self.select_stars is None:

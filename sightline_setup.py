@@ -38,8 +38,9 @@ def initialize_sightlines(stars, dust, emission_CO, emission_HI, sightline_confi
                 print('populating from files!')
             star_selection_kwargs = {"fname": program_directory + "/sightline_outputs/stars_{}.fits".format(i)}
 
+        coords = None
 
-        sightline = Sightline(stars, dust, data_processing_kwargs = data_processing_kwargs, star_selection_kwargs = star_selection_kwargs)
+        sightline = Sightline(stars, dust, coords, data_processing_kwargs = data_processing_kwargs, star_selection_kwargs = star_selection_kwargs)
         sightlines.append(sightline)
 
     return sightlines

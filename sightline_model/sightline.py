@@ -5,7 +5,7 @@ import astropy.constants as c
 from astropy.io import fits
 import logging
 
-from base_model import BaseModel
+from .base_model import BaseModel
 from filehandling import get_medres, get_ca_res, get_madgics_res, getapStar, getASPCAP
 
 
@@ -14,15 +14,16 @@ logger = logging.getLogger(__name__)
 
 class Sightline(BaseModel):
     def __init__(
-        self, stars, coordinates, dust_data, bins=None, star_selection=None, **kwargs
+        self, stars, dust_data,  *args, bins=None, coordinates = None, star_selection_kwargs = None,  **kwargs
     ):
-        super().__init__()
+        super().__init__(self, stars, **kwargs)
         # if star_selection is None:
-        l, b = coordinates
-        if star_selection is None:
-            self.stars = stars[self.select_near_point(stars, l, b, radius=0.3)]
+        if self.select_stars is None:
+            l, b = coordinates
+            self.stars = stars[self.select_near_point(stars, l, b, **kwargs)]
         else:
-            self.stars = star_selection(stars, l, b)
+            stars = self.select_stars(stars, **star_selection_kwargs)
+            self.stars = stars
     
 
         dist = stars["DIST"]
@@ -87,7 +88,7 @@ class Sightline(BaseModel):
 
                 l, b = star["GLON"], star["GLAT"]
                 dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
-                    l, b, self.bins, star["DIST"], **kwargs
+                    l, b, self.bins, star["DIST"]
                 )
 
         else:
@@ -111,7 +112,7 @@ class Sightline(BaseModel):
                 #     signal_errs[i, :] = err_repr[self.window]
                 l, b = star["GLON"], star["GLAT"]
                 dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
-                    l, b, star["DIST"], self.bins, dust_data, **kwargs
+                    l, b, star["DIST"], self.bins, dust_data, 
                 )
 
                 if MADGICS:

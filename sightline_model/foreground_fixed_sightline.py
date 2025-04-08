@@ -32,7 +32,7 @@ def fg_polynomial2d(x1, x2, theta = None, uncert = None):
     return np.nansum(matrix, axis =1).item()
 
 class ForegroundFixedSightline(BaseModel):
-    def __init__(self, stars, dust_data, star_selection_kwargs = None, coordinates = None, dfore = 401, **kwargs):
+    def __init__(self, stars, dust_data,  *args, star_selection_kwargs = None, coordinates = None, dfore = 401, **kwargs):
         super().__init__(self, stars, **kwargs)
         
         if self.select_stars is None:
