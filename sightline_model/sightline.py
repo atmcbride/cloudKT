@@ -71,25 +71,20 @@ class Sightline(BaseModel):
         dAVdd_all = np.zeros((len(self.stars), len(self.bins) - 1))
         dAVdd_mask = np.zeros((len(self.stars), len(self.bins) - 1)).astype(bool)
 
-        if alternative_data_processing is not None:
-            # needs to take aspcap, medres, apstar, rv as arguments
+        if self.alternative_data_processing is not None: 
+            # alternative data processing must be assigned outside of class;
+            # takes self, aspcap, medres, apstar, star_rv, and **kwargs
             for i in range(len(self.stars)):
                 star = self.stars[i]
-                star_rv = star["VHELIO_AVG"]
-                aspcap = fits.open(self.getASPCAP(star))
-                apstar = fits.open(self.getapStar(aspcap))
-                medres = fits.open(
-                    self.get_medres(star["TEFF"], star["LOGG"], star["M_H"])
-                )
-                sig, err = alternative_data_processing(
-                    self.aspcap, medres, apstar, star_rv
+
+                sig, err = self.alternative_data_processing(
+                    star, **kwargs
                 )
                 signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
 
                 l, b = star["GLON"], star["GLAT"]
                 dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
-                    l, b, self.bins, star["DIST"]
-                )
+                    l, b, star["DIST"], self.bins, dust_data)
 
         else:
             if MADGICS:

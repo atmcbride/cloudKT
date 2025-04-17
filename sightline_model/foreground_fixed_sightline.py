@@ -32,7 +32,7 @@ def fg_polynomial2d(x1, x2, theta = None, uncert = None):
     return np.nansum(matrix, axis =1).item()
 
 class ForegroundFixedSightline(BaseModel):
-    def __init__(self, stars, dust_data,  *args, star_selection_kwargs = None, coordinates = None, dfore = 401, **kwargs):
+    def __init__(self, stars, dust_data,  *args, star_selection_kwargs = None, data_processing_kwargs = None, coordinates = None, dfore = 401, **kwargs):
         super().__init__(self, stars, **kwargs)
         
         if self.select_stars is None:
@@ -55,7 +55,7 @@ class ForegroundFixedSightline(BaseModel):
             self.l, self.b = (np.nanmean(self.stars['GLON']), np.nanmean(self.stars['GLAT']))
         
         self.rvelo = np.zeros(len(self.bins) - 1)
-        self.get_DIBs(dust_data, **kwargs)
+        self.get_DIBs(dust_data, data_processing_kwargs = data_processing_kwargs, **kwargs)
 
         self.ndim = len(self.voxel_dAVdd)
         self.nsig = len(self.stars)
@@ -63,7 +63,7 @@ class ForegroundFixedSightline(BaseModel):
 
         self.test_init_signals = self.model_signals(self.rvelo, self.dAVdd)
 
-    def get_DIBs(self, dust_data, use_MADGICS=False, **kwargs):
+    def get_DIBs(self, dust_data, use_MADGICS=False, data_processing_kwargs = None, **kwargs):
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
         signal_errs = np.zeros((len(self.stars), len(self.wavs_window)))
         dAVdd = np.zeros((len(self.stars), len(self.bins) - 1))
@@ -77,7 +77,7 @@ class ForegroundFixedSightline(BaseModel):
                 star = self.stars[i]
 
                 sig, err = self.alternative_data_processing(
-                    star, **kwargs
+                    star, **data_processing_kwargs
                 )
                 signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
 

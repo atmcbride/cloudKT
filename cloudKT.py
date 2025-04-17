@@ -65,6 +65,9 @@ def pipeline(config):
     logger.info("--- Loading sightline module ---")
     sightline_setup_module = load_module(config['SIGHTLINE_SETUP']['MODULE'])
     sightline_setup = getattr(sightline_setup_module, config['SIGHTLINE_SETUP']['FUNCTION'])
+    uses_foreground = False
+    if "foreground" in config['SIGHTLINE_SETUP']['MODULE']:
+        uses_foreground = True
     sightline_setup_config = config['SIGHTLINE_SETUP']['PARAMETERS']
     sightline_setup_config["POPULATE_FROM_FILES"] = args.populate_from_files == "true"
     sightline_setup_config["STARS_TO_FILES"] = args.stars_to_files == "true"
@@ -121,8 +124,8 @@ def pipeline(config):
             fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
             plt.close()
 
-        fig, ax = plot_signals_sample(chain, sightlines[i])
-        # fig, ax = plot_signals_sample_fg(chain, sightlines[i])
+        plot_signals = plot_signals_sample_fg if uses_foreground else plot_signals_sample
+        fig, ax = plot_signals(chain, sightlines[i])
 
         fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
@@ -164,9 +167,9 @@ def pipeline(config):
         fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i))
 
 
-        fig, ax, dist_xx, med_velo, std_velo = plot_velo(chain, sightlines[i])
-        fig.savefig(program_directory + "/figures/veloposterior_sl_{i}.jpg".format(i=i))
-        plt.close()      
+        # fig, ax, dist_xx, med_velo, std_velo = plot_velo(chain, sightlines[i])
+        # fig.savefig(program_directory + "/figures/veloposterior_sl_{i}.jpg".format(i=i))
+        # plt.close()      
 
     logger.info("Successfully ran through cloudKT.pipeline!")
 

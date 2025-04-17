@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 def plot_walkers(chain, idx,  sightline = None,):
         fig, ax = plt.subplots()
-        ax.plot(chain[:, :, idx])
+        ax.plot(chain[:, :, idx], color = 'k', alpha = 0.4)
         ax.set_xlabel('Walker Steps')
         label = ""
         if sightline is not None:
