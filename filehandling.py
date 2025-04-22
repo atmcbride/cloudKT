@@ -38,7 +38,7 @@ def getASPCAP(row):
 
 def getapStar(hdulist):
     specdir = '/uufs/chpc.utah.edu/common/home/sdss/dr17/apogee/spectro/redux/dr17/stars/{TELESCOPE}/{FIELD}/'
-    telescope = str(hdulist[4].data['TEL ESCOPE'][0])
+    telescope = str(hdulist[4].data['TELESCOPE'][0])
     field = str(hdulist[4].data['FIELD'][0])
     fname = str(hdulist[4].data['FILE'][0])
     path = ((specdir + fname).format(TELESCOPE = telescope, FIELD = field))

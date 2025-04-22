@@ -2,7 +2,7 @@
 
 import numpy as np
 from astropy.io import fits
-from sightline_model import BaseModel
+from .base_model import BaseModel
 from astropy.table import Table
 
 from filehandling import get_medres, get_ca_res, get_madgics_res, getapStar, getASPCAP
@@ -13,11 +13,9 @@ sigma0 = 1.15
 
 def get_highLat(tabfile = '/uufs/chpc.utah.edu/common/home/sdss/dr17/apogee/spectro/aspcap/dr17/synspec_rev1/allStar-dr17-synspec_rev1.fits'):
     allStar = Table.read(tabfile, hdu = 1)
-    print(len(allStar))
     starFlag = allStar['ASPCAPFLAG']
     starMask = np.invert((np.logical_and(starFlag, 2**23)==True))
     allStar = allStar[starMask]
-    print(len(allStar))
     highLat = allStar[(np.abs(allStar['GLAT']) > 15) & (1000/allStar['GAIAEDR3_PARALLAX'] < 1.5e3) & (allStar['SFD_EBV'] < 0.2)]
 
     data_criteria_hl= (((highLat['SNR'] > 80) & (highLat['TEFF'] > 5000)) | (highLat['SNR'] > 150)) & (highLat['ASPCAP_CHI2'] > 1) & (highLat['ASPCAP_CHI2'] < 5)
@@ -29,7 +27,7 @@ highLat = get_highLat()
 
 class InjectionSightline(BaseModel):
     def __init__(
-        self, stars, dust_data, rvelo_profile, dust_profile, *args,  bins=None, emission= None, coordinates = None, star_selection_kwargs = None, injectRealContinuum = True, **kwargs
+        self, stars, dust_data, rvelo_profile, dust_profile, *args, dust_profile_err = None, bins=None, emission= None, coordinates = None, star_selection_kwargs = None, injectRealContinuum = True, **kwargs
     ):
         super().__init__(self, stars, **kwargs)
         # if star_selection is None:
@@ -54,7 +52,8 @@ class InjectionSightline(BaseModel):
         self.rvelo = np.zeros(len(self.bins) - 1)
         self.get_DIBs_skeleton(dust_data, **kwargs)
 
-        self.makeSyntheticDIBs(rvelo_profile, dAVdd = dust_profile, injectRealContinuum = injectRealContinuum)
+
+        self.makeSyntheticDIBs(rvelo_profile, dust_data, dAVdd_profile = dust_profile, dAVdd_profile_err = dust_profile_err, injectRealContinuum = injectRealContinuum)
 
         self.ndim = len(self.voxel_dAVdd)
         self.nsig = len(self.stars)
@@ -82,19 +81,23 @@ class InjectionSightline(BaseModel):
 
         self.bins = bins
 
-    def makeSyntheticDIBs(self, rvelo, dust_data, dAVdd=None, emission = None, injectRealContinuum=True):
-        continua = np.zeros(self.signals.shape)
-        continua_errs = np.zeros(self.signals.shape)
+    def makeSyntheticDIBs(self, rvelo, dust_data, dAVdd_profile=None, dAVdd_profile_err = None, emission = None, injectRealContinuum=True):
+        continua = np.zeros((len(self.stars), len(self.wavs_window)))
+        continua_errs = np.zeros((len(self.stars), len(self.wavs_window)))
         dustcolumn = np.zeros((len(self.stars), dust_data.dustmap.shape[-1]))
-        avg_dust, std_dust = self.get_avg_dust()
-        dustcolumn_std = np.zeros((len(self.stars), dust_data.dustmap.shape[-1]))
+        # signals = np.zeros((len(self.stars), len(self.wavs_window)))
+        # signal_errs = np.zeros((len(self.stars), len(self.wavs_window)))
 
-
+        dAVdd = np.zeros((len(self.stars), len(self.bins) - 1))
         dAVdd_all = np.zeros((len(self.stars), len(self.bins) - 1))
         dAVdd_mask = np.zeros((len(self.stars), len(self.bins) - 1)).astype(bool)
 
         for i in range(len(self.stars)):
             star = self.stars[i]
+
+            dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array_synthetic(
+            star["DIST"], self.bins, dust_data.distance, dAVdd_profile)
+                
             rv_star = star["VHELIO_AVG"]
             if injectRealContinuum:
                 continuum, continuum_uncertainty = self.getAnalogContinuum(
@@ -110,17 +113,17 @@ class InjectionSightline(BaseModel):
                 continua[i, :] = continuum
                 continua_errs[i, :] = continuum_uncertainty
 
-            l_i, b_i = self.find_nearest_angular(star["GLON"], star["GLAT"])
-            d_i = self.find_nearest_dist(star["DIST"]).item()
+            l_i, b_i = dust_data.find_nearest_angular(star["GLON"], star["GLAT"])
+            d_i = dust_data.find_nearest_distance(star["DIST"]).item()
             if dAVdd is not None:
                 dcol = np.copy(dAVdd)
                 dcol[d_i:] = 0
             else:
                 dcol = dust_data.dustmap[b_i, l_i, :]
                 dcol[d_i:] = 0
-            dustcolumn[i, :] = dcol
+            # dustcolumn[i, :] = dcol
 
-        raw_DIB = self.integrateMockDIB(rvelo, dustcolumn)
+        raw_DIB = self.integrateMockDIB(rvelo, dAVdd_profile)
         signals = raw_DIB - 1 + continua
 
         self.signals = signals
@@ -128,8 +131,16 @@ class InjectionSightline(BaseModel):
         self.raw_DIB = raw_DIB
         self.continuum = continua
         self.dustcolumn = dustcolumn
+
+        self.dAVdd = dAVdd
+        self.voxel_dAVdd = np.nanmedian(dAVdd_all, axis=0)
+        # self.voxel_dAVdd_std = np.nanstd(dAVdd_all, axis=0, ddof=1)
+        # self.voxel_dAVdd_std = np.sqrt(np.sum(dAVdd_profile_err**2)) * np.ones(self.voxel_dAVdd_std.shape)
+        self.voxel_dAVdd_std = np.nanmedian(self.voxel_dAVdd_std) * np.ones(self.voxel_dAVdd.shape)
+        self.dAVdd_mask = dAVdd_mask.astype(bool)
+
     def get_DIBs_skeleton(
-        self, dust_data, MADGICS=False, alternative_data_processing=None, **kwargs
+        self, dust_data, dAVdd_profile = None, MADGICS=False, alternative_data_processing=None, **kwargs
     ):
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
         signal_errs = np.zeros((len(self.stars), len(self.wavs_window)))
@@ -149,25 +160,15 @@ class InjectionSightline(BaseModel):
                 signals[i, :], signal_errs[i, :] = sig[self.window], err[self.window]
 
                 l, b = star["GLON"], star["GLAT"]
-                dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
-                    l, b, star["DIST"], self.bins, dust_data)
 
-        else:
-            if MADGICS:
-                signals_aspcap = np.zeros((len(self.stars), len(self.wavs_window)))
-                signal_errs_aspcap = np.zeros((len(self.stars), len(self.wavs_window)))
-
-            for i in range(len(self.stars)):
-                star = self.stars[i]
-                l, b = star["GLON"], star["GLAT"]
-                dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array(
-                    l, b, star["DIST"], self.bins, dust_data, 
-                )
 
         self.dAVdd = dAVdd
         self.voxel_dAVdd = np.nanmedian(dAVdd_all, axis=0)
         self.voxel_dAVdd_std = np.nanstd(dAVdd_all, axis=0, ddof=1)
         self.dAVdd_mask = dAVdd_mask.astype(bool)
+
+        self.star_signals = signals
+        self.star_signal_errs = signal_errs
 
     def getAnalogContinuum(self, star, rv_star, reference_stars=highLat):
         SNRdiff = np.abs(reference_stars["SNR"] - star["SNR"])
@@ -182,16 +183,20 @@ class InjectionSightline(BaseModel):
         medres = fits.open(get_medres(analog["TEFF"], analog["LOGG"], analog["M_H"]))
         aspcap = fits.open(getASPCAP(analog))
         apstar = fits.open(getapStar(aspcap))
-        res, res_err = self.generateClippedResidual(aspcap, medres, apstar, rv_star)
+        if hasattr(self, "alternative_data_processing"):
+            res, res_err = self.alternative_data_processing(star)
+        else: 
+            print("Issue loading residuals from alternative_data_processing (fix this!)")
         return res, res_err
 
+
     def integrateMockDIB(self, rvelo, dAVdd):
-        print(rvelo.shape)
-        print(dAVdd.shape)
+
+
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
         peak_wavelength = self.dopplershift(rvelo)
         wavs_grid = np.tile(self.wavs_window, (len(rvelo), 1))
-        print(wavs_grid.shape)
+
         voxel_DIB_unscaled = np.exp(
             -((wavs_grid - peak_wavelength[:, np.newaxis]) ** 2) / (2 * sigma0**2)
         )
@@ -208,8 +213,10 @@ class InjectionSightline(BaseModel):
 
         for i in range(len(self.stars)):
             star = self.stars[i]
-            dAVdd_star = dAVdd[i, :]
-            amp = self.differentialAmplitude(dAVdd_star, 1)
+            # dAVdd_star = dAVdd[i, :]
+            # amp = self.differentialAmplitude(dAVdd_star, 1)
+            amp = self.differentialAmplitude(dAVdd, 1)
+
 
             bin_index = self.bin_inds[i]
             # signals[i, :] = single_signal(bin_index)
@@ -247,7 +254,7 @@ class InjectionSightline(BaseModel):
         return signals
 
             
-
+    @staticmethod
     def get_dust_profile(dust, emission, threshold = 0.03, ref_point = (167.4, -8.3), dust_profile_type = None, av_offset = 0, **kwargs):
         if dust_profile_type == "average prior":
             # replicates dust extraction from the prior
@@ -276,12 +283,43 @@ class InjectionSightline(BaseModel):
 
             return avg_dust_profile, std_dust_profile
 
+    @staticmethod
     def get_velo_profile(*args, velo_profile_type = "linear", v_noise_scale = 0.0, **kwargs):
         if velo_profile_type == "linear":
             dust, vnear, vfar, xnear, xfar = args
             dist = dust.distance
             velo_profile = np.zeros(dist.shape)
-            velo_profile[(dist > xnear)  & (dist <= xfar)] = (vfar - vnear) / (xfar - xnear) * dist[(dist > xnear)  & (dist <= xfar)]
+            slope = (vfar - vnear) / (xfar - xnear)
+            intercept = - (xnear + xfar ) / 2  * slope 
+            velo_profile[(dist > xnear)  & (dist <= xfar)] = slope * dist[(dist > xnear)  & (dist <= xfar)] + intercept
             velo_profile[(dist > xnear)  & (dist <= xfar)] += np.random.normal(scale = v_noise_scale, 
                         size = np.sum((dist > xnear)  & (dist <= xfar)))
         return velo_profile
+
+    @staticmethod
+    def generate_dAV_dd_array_synthetic(star_dist, distance_bins, distance, dust_profile):
+        """
+        Generates a dAV_dd array for a given stellar position, distance bin boundaries, and dust map.
+        """
+        dust_column = np.copy(dust_profile)
+        n_bins = len(distance_bins) - 1
+        dAVdd = np.zeros(n_bins)
+        dAVdd_all = np.zeros(n_bins)
+        dAVdd_mask = np.zeros(n_bins)
+        for i in range(len(dAVdd)):
+            bin_min, bin_max = distance_bins[i], distance_bins[i + 1]
+            if bin_min < star_dist:
+                dist_max = bin_max
+                if bin_max >= star_dist:
+                    dist_max = star_dist
+            else:
+                dist_max = -np.inf
+            dAVdd[i] = np.sum(
+                dust_column[(distance > bin_min) & (distance <= dist_max)]
+            )
+            dAVdd_all[i] = np.sum(
+                dust_column[(distance > bin_min) & (distance <= bin_max)]
+            )
+
+        dAVdd_mask = (dAVdd == 0).astype(bool)
+        return dAVdd, dAVdd_all, dAVdd_mask

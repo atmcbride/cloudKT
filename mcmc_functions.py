@@ -13,9 +13,9 @@ def log_likelihood(theta, sightline = None, **kwargs):
     else:
         return val
     
-def log_prior_v(theta, sightline = None, **kwargs):
+def log_prior_v(theta, sightline = None, vmin = -8.5, vmax = 17.5, **kwargs):
     v = theta[ :sightline.ndim]
-    if (np.any(v < -8.5)) or (np.any(v > 17.5)):
+    if (np.any(v < vmin)) or (np.any(v > vmax)):
         return -np.inf
     return 0.0
 
