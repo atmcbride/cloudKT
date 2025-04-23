@@ -120,7 +120,11 @@ def pipeline(config):
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
         for j in range(0, sightlines[i].ndim, 1):
-            fig, ax = plot_walkers(chain, j)
+            fig, ax = plot_walkers(chain, j, sightline = sightlines[i])
+            fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
+            plt.close()
+        for j in range(sightlines[i].ndim, 2 * sightlines[i].ndim, 2):
+            fig, ax = plot_walkers(chain, j, sightline = sightlines[i])
             fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
             plt.close()
 

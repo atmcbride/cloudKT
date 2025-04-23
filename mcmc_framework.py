@@ -56,9 +56,13 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
     sampler = emcee.EnsembleSampler(nwalkers, ndim_amp, log_probability, pool = pool, backend = backend, kwargs = {
                                     'sightline': sightline, 'log_likelihood': log_likelihood, 'log_priors': log_priors})
 
-    init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+    # init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+    init = 30 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+
     init[:, ndim:] = np.abs(sightline.dAVdd.ravel()[np.newaxis, :] + 0.1*(np.random.random(init[:, ndim:].shape)-0.5))
-    init[:, ndim:][(init[:, ndim:] <= 0.1)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.1))
+    # init[:, ndim:][(init[:, ndim:] <= 0.1)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.1))
+    init[:, ndim:][(init[:, ndim:] <= 0.0)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.0))
+
 
     print('NDIM:', ndim, 'NSTAR:', nstar, 'INITSHAPE:', init.shape)
 

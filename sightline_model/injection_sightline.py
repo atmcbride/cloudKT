@@ -137,7 +137,7 @@ class InjectionSightline(BaseModel):
         # self.voxel_dAVdd_std = np.nanstd(dAVdd_all, axis=0, ddof=1)
         # self.voxel_dAVdd_std = np.sqrt(np.sum(dAVdd_profile_err**2)) * np.ones(self.voxel_dAVdd_std.shape)
         # self.voxel_dAVdd_std = np.nanmedian(self.voxel_dAVdd_std) * np.ones(self.voxel_dAVdd.shape)
-        self.dAVdd_mask = dAVdd_mask.astype(bool)
+        # self.dAVdd_mask = dAVdd_mask.astype(bool)
 
     def get_DIBs_skeleton(
         self, dust_data, dAVdd_profile = None, MADGICS=False, alternative_data_processing=None, **kwargs
