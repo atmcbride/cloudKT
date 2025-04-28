@@ -1,12 +1,25 @@
 import numpy as np
 from scipy.signal import correlate, correlation_lags
 
+# def log_likelihood(theta, sightline = None, **kwargs):
+#     v = theta[ :len(sightline.voxel_dAVdd)]
+#     av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
+#     signal = sightline.signals
+#     sigma = sightline.signal_errs
+#     val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = av))**2 / (sigma**2)) # IS THIS WRONG
+#     if np.isnan(val):
+#         # print('fail loglikely')
+#         return -np.inf
+#     else:
+#         return val
+
+
 def log_likelihood(theta, sightline = None, **kwargs):
     v = theta[ :len(sightline.voxel_dAVdd)]
     av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
     signal = sightline.signals
     sigma = sightline.signal_errs
-    val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = av))**2 / (sigma**2)) # IS THIS WRONG
+    val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = sightline.dAVdd))**2 / (sigma**2)) # IS THIS WRONG
     if np.isnan(val):
         # print('fail loglikely')
         return -np.inf
@@ -19,7 +32,7 @@ def log_prior_v(theta, sightline = None, vmin = -8.5, vmax = 17.5, **kwargs):
         return -np.inf
     return 0.0
 
-def log_prior_davdd(theta, sightline = None, AV_base = 5, AV_max = 10, **kwargs):
+def log_prior_davdd(theta, sightline = None, **kwargs):
     av = theta[sightline.ndim:].reshape(-1, sightline.ndim)
     if ((np.any(av < 0))):
         return -np.inf
@@ -82,7 +95,7 @@ class Logprior_Foreground:
             return -np.inf
         return 0.0
     
-class Logprior_Average_Extinction:
+class Logprior_Average_Extinction_OLD:
     def __init__(self, sightline, dust, emission, threshold = 0.03, ref_point = (167.4, -8.3)):
         b_em, l_em = emission.world[0, :, :][1:]
         b_em, l_em = b_em[:, 0], l_em[0, :]
@@ -131,7 +144,104 @@ class Logprior_Average_Extinction:
         lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / ((width_factor * self.std_dAVdd)**2)))
         return lp_val
 
+class Logprior_Average_Extinction_:
+    def __init__(self, sightline, dust, emission, threshold = 0.03, ref_point = (167.4, -8.3)):
+        b_em, l_em = emission.world[0, :, :][1:]
+        b_em, l_em = b_em[:, 0], l_em[0, :]
+        em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
+        reference_point = emission.unmasked_data[:, em_j, em_i]
+        corr_lags = correlation_lags(emission.shape[0], emission.shape[0])
+        zpoint = corr_lags == 0
 
+        correlation_image = np.zeros((emission.shape[1], emission.shape[2]))
+        for i in range(emission.shape[1]):
+            for j in range(emission.shape[2]):
+                correlation_image[i, j] = correlate(emission.unmasked_data[:, i, j] / np.nansum(np.abs(emission.unmasked_data[:, i, j])), 
+                                                    reference_point / np.nansum(np.abs(reference_point)))[zpoint]
+        correlation_selection = np.where(correlation_image > threshold)
+        correlation_l, correlation_b = l_em[correlation_selection[1]], b_em[correlation_selection[0]]
+
+        dust_indices = np.array([dust.find_nearest_angular(correlation_l[i].value, correlation_b[i].value) for i in range(len(correlation_l))])
+        # dust_coordinates = (dust.l_1d[dust_indices[:, 0]], dust.b_1d[dust_indices[:, 1]]) # for debuging 
+        
+        dust_profiles = dust.dustmap[dust_indices[:, 1], dust_indices[:, 0]] # remember that the dustmap is in b, l, d
+        avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
+        std_dust_profile = np.nanstd(dust_profiles, axis = 0, ddof = 1)
+
+        distance = dust.distance
+        n_bins = len(sightline.bins) - 1
+        avg_dAVdd = np.zeros(n_bins)
+        std_avg_dAVdd = np.zeros(n_bins)
+        for i in range(len(avg_dAVdd)):
+            bin_min, bin_max = sightline.bins[i], sightline.bins[i + 1]
+            bin_profiles = dust_profiles[:, (distance > bin_min) & (distance <= bin_max)]
+            avg_dAVdd[i] = np.nansum(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)])
+            # std_avg_dAVdd[i]  = np.sqrt(np.nansum(std_dust_profile[(distance > bin_min) & (distance <= bin_max)]**2)) / np.sum((distance > bin_min) & (distance <= bin_max))
+            avg_dAVdd[i] = np.nanmedian(np.nansum(bin_profiles, axis = 1))
+            std_avg_dAVdd[i] = np.nanstd(np.nansum(bin_profiles, axis = 1), ddof = 1)
+
+        self.avg_dAVdd = avg_dAVdd
+        self.std_dAVdd = std_avg_dAVdd
+        pass
+        
+    def log_prior_avg_av(self, theta, sightline=None, width_factor= 10):
+        av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
+        mask = sightline.dAVdd_mask
+        av[mask] = np.nan
+        avmed = np.nanmedian(av, axis = 0)
+        avstd = sightline.voxel_dAVdd_std
+        lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / ((width_factor * self.std_dAVdd)**2)))
+        return lp_val
+    
+class Logprior_Average_Extinction:
+    def __init__(self, sightline, dust, emission, threshold = 0.03, ref_point = (167.4, -8.3)):
+        b_em, l_em = emission.world[0, :, :][1:]
+        b_em, l_em = b_em[:, 0], l_em[0, :]
+        em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
+        reference_point = emission.unmasked_data[:, em_j, em_i]
+        corr_lags = correlation_lags(emission.shape[0], emission.shape[0])
+        zpoint = corr_lags == 0
+
+        correlation_image = np.zeros((emission.shape[1], emission.shape[2]))
+        for i in range(emission.shape[1]):
+            for j in range(emission.shape[2]):
+                correlation_image[i, j] = correlate(emission.unmasked_data[:, i, j] / np.nansum(np.abs(emission.unmasked_data[:, i, j])), 
+                                                    reference_point / np.nansum(np.abs(reference_point)))[zpoint]
+        correlation_selection = np.where(correlation_image > threshold)
+        correlation_l, correlation_b = l_em[correlation_selection[1]], b_em[correlation_selection[0]]
+
+        dust_indices = np.array([dust.find_nearest_angular(correlation_l[i].value, correlation_b[i].value) for i in range(len(correlation_l))])
+        # dust_coordinates = (dust.l_1d[dust_indices[:, 0]], dust.b_1d[dust_indices[:, 1]]) # for debuging 
+        
+        dust_profiles = dust.dustmap[dust_indices[:, 1], dust_indices[:, 0]] # remember that the dustmap is in b, l, d
+        avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
+        avg_dust_profile[dust.distance < 400] = 0
+        std_dust_profile = np.nanstd(dust_profiles, axis = 0, ddof = 1)
+
+        distance = dust.distance
+        n_bins = len(sightline.bins) - 1
+        avg_dAVdd = np.zeros(n_bins)
+        std_avg_dAVdd = np.zeros(n_bins)
+        for i in range(len(avg_dAVdd)):
+            bin_min, bin_max = sightline.bins[i], sightline.bins[i + 1]
+            bin_profiles = dust_profiles[:, (distance > bin_min) & (distance <= bin_max)]
+            avg_dAVdd[i] = np.nansum(avg_dust_profile[(distance > bin_min) & (distance <= bin_max)])
+            # std_avg_dAVdd[i]  = np.sqrt(np.nansum(std_dust_profile[(distance > bin_min) & (distance <= bin_max)]**2)) / np.sum((distance > bin_min) & (distance <= bin_max))
+            # avg_dAVdd[i] = np.nanmedian(np.nansum(bin_profiles, axis = 1))
+            std_avg_dAVdd[i] = np.nanstd(np.nansum(bin_profiles, axis = 1), ddof = 1)
+
+        self.avg_dAVdd = avg_dAVdd
+        self.std_dAVdd = std_avg_dAVdd
+
+        
+    def log_prior_avg_av(self, theta, sightline=None, width_factor= 10):
+        av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
+        mask = sightline.dAVdd_mask
+        av[mask] = np.nan
+        avmed = np.nanmedian(av, axis = 0)
+        avstd = sightline.voxel_dAVdd_std
+        lp_val = np.nansum(- 0.5 * np.nansum((av - self.avg_dAVdd)**2 / ((width_factor * self.std_dAVdd)**2)))
+        return lp_val
 
 
 def log_prior(theta, sightline = None, log_priors = [],  **kwargs):

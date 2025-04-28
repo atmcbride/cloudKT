@@ -137,7 +137,7 @@ class InjectionSightline(BaseModel):
         # self.voxel_dAVdd_std = np.nanstd(dAVdd_all, axis=0, ddof=1)
         # self.voxel_dAVdd_std = np.sqrt(np.sum(dAVdd_profile_err**2)) * np.ones(self.voxel_dAVdd_std.shape)
         # self.voxel_dAVdd_std = np.nanmedian(self.voxel_dAVdd_std) * np.ones(self.voxel_dAVdd.shape)
-        # self.dAVdd_mask = dAVdd_mask.astype(bool)
+        self.dAVdd_mask = dAVdd_mask.astype(bool)
 
     def get_DIBs_skeleton(
         self, dust_data, dAVdd_profile = None, MADGICS=False, alternative_data_processing=None, **kwargs
@@ -187,7 +187,7 @@ class InjectionSightline(BaseModel):
         aspcap = fits.open(getASPCAP(analog))
         apstar = fits.open(getapStar(aspcap))
         if hasattr(self, "alternative_data_processing"):
-            res, res_err = self.alternative_data_processing(star)
+            res, res_err = self.alternative_data_processing(analog)
         else: 
             print("Issue loading residuals from alternative_data_processing (fix this!)")
         return res, res_err
@@ -283,6 +283,7 @@ class InjectionSightline(BaseModel):
             avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
             std_dust_profile = np.nanstd(dust_profiles, axis = 0, ddof = 1)
             avg_dust_profile = avg_dust_profile + av_offset
+            avg_dust_profile[dust.distance < 400] = 0
 
             return avg_dust_profile, std_dust_profile
 
