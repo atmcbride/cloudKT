@@ -153,7 +153,7 @@ def evaluate_log_prior(theta, log_priors = None, sightline = None, **kwargs):
     lp = 0
     for lp_entry in log_priors:
         lp_fn, lp_kwargs = lp_entry
-        lp_fn_val = lp_fn(theta, sightline = sightline, **lp_kwargs)
+        lp_fn_val = lp_fn(theta, sightline = sightline, **lp_kwargs)        
         lp += lp_fn_val
     return lp
 

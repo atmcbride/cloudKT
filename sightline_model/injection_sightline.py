@@ -126,8 +126,8 @@ class InjectionSightline(BaseModel):
         raw_DIB = self.integrateMockDIB(rvelo, dAVdd_profile)
         signals = raw_DIB - 1 + continua
 
-        self.signals = signals
-        self.signal_errs = continua_errs
+        # self.signals = signals
+        # self.signal_errs = continua_errs
         self.raw_DIB = raw_DIB
         self.continuum = continua
         self.dustcolumn = dustcolumn
@@ -170,8 +170,8 @@ class InjectionSightline(BaseModel):
         self.voxel_dAVdd_std = np.nanstd(dAVdd_all, axis=0, ddof=1)
         self.dAVdd_mask = dAVdd_mask.astype(bool)
 
-        self.star_signals = signals
-        self.star_signal_errs = signal_errs
+        # self.signals = signals
+        # self.signal_errs = signal_errs
 
     def getAnalogContinuum(self, star, rv_star, reference_stars=highLat):
         SNRdiff = np.abs(reference_stars["SNR"] - star["SNR"])
