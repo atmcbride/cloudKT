@@ -97,6 +97,8 @@ class InjectionSightline(BaseModel):
 
             dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array_synthetic(
             star["DIST"], self.bins, dust_data.distance, dAVdd_profile)
+            dAVdd[i] = dAVdd[i] * 3
+            dAVdd_all[i] = dAVdd_all[i] * 3
                 
             rv_star = star["VHELIO_AVG"]
             if injectRealContinuum:

@@ -230,7 +230,7 @@ class Logprior_Average_Extinction:
             # avg_dAVdd[i] = np.nanmedian(np.nansum(bin_profiles, axis = 1))
             std_avg_dAVdd[i] = np.nanstd(np.nansum(bin_profiles, axis = 1), ddof = 1)
 
-        self.avg_dAVdd = avg_dAVdd
+        self.avg_dAVdd = 3 * avg_dAVdd
         self.std_dAVdd = std_avg_dAVdd
 
         
