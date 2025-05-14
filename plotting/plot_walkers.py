@@ -12,3 +12,6 @@ def plot_walkers(chain, idx,  sightline = None, **kwargs):
                  label = r"$\Delta A(V)"
         ax.set_ylabel(label)
         return fig, ax
+
+def plot_logprobs(sampler, idx, *args, sightline = None, **kwargs):
+     sampler.get_logprob()

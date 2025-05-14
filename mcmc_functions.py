@@ -1,30 +1,30 @@
 import numpy as np
 from scipy.signal import correlate, correlation_lags
 
-# def log_likelihood(theta, sightline = None, **kwargs):
-#     v = theta[ :len(sightline.voxel_dAVdd)]
-#     av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
-#     signal = sightline.signals
-#     sigma = sightline.signal_errs
-#     val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = av))**2 / (sigma**2)) # IS THIS WRONG
-#     if np.isnan(val):
-#         # print('fail loglikely')
-#         return -np.inf
-#     else:
-#         return val
-
-
 def log_likelihood(theta, sightline = None, **kwargs):
     v = theta[ :len(sightline.voxel_dAVdd)]
     av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
     signal = sightline.signals
     sigma = sightline.signal_errs
-    val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = sightline.dAVdd))**2 / (sigma**2)) # IS THIS WRONG
+    val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = av))**2 / (sigma**2)) # IS THIS WRONG
     if np.isnan(val):
         # print('fail loglikely')
         return -np.inf
     else:
         return val
+
+
+# def log_likelihood(theta, sightline = None, **kwargs):
+#     v = theta[ :len(sightline.voxel_dAVdd)]
+#     av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
+#     signal = sightline.signals
+#     sigma = sightline.signal_errs
+#     val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = ))**2 / (sigma**2)) # IS THIS WRONG
+#     if np.isnan(val):
+#         # print('fail loglikely')
+#         return -np.inf
+#     else:
+#         return val
     
 def log_prior_v(theta, sightline = None, vmin = -8.5, vmax = 17.5, **kwargs):
     v = theta[ :sightline.ndim]
@@ -230,7 +230,7 @@ class Logprior_Average_Extinction:
             # avg_dAVdd[i] = np.nanmedian(np.nansum(bin_profiles, axis = 1))
             std_avg_dAVdd[i] = np.nanstd(np.nansum(bin_profiles, axis = 1), ddof = 1)
 
-        self.avg_dAVdd = 3 * avg_dAVdd
+        self.avg_dAVdd = avg_dAVdd
         self.std_dAVdd = std_avg_dAVdd
 
         

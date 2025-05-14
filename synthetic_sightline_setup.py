@@ -41,7 +41,7 @@ def initialize_synthetic_sightlines(stars, dust, emission_CO, emission_HI, sight
 
         coords = None
 
-        dust_profile, dust_profile_err = Sightline.get_dust_profile(dust, emission_CO, **initialization_params)
+        dust_profile, dust_profile_err = Sightline.get_dust_profile(dust, emission_CO, 400, 600, 4, **initialization_params)
         velo_profile = Sightline.get_velo_profile(dust, -10, 10, 400, 600)
 
 

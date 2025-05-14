@@ -143,7 +143,7 @@ def log_probability(theta, sightline = None, log_likelihood = None, log_priors =
     ll = ll_fn(theta, sightline = sightline, **ll_kwargs)
     lp = evaluate_log_prior(theta, log_priors = log_priors, sightline = sightline, **kwargs)
 
-    return ll + lp
+    return ll + lp, lp
 
 def expand_theta(theta, sightline):
     mask = sightline.dAVdd_mask

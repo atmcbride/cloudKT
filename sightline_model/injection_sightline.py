@@ -128,8 +128,8 @@ class InjectionSightline(BaseModel):
         raw_DIB = self.integrateMockDIB(rvelo, dAVdd_profile)
         signals = raw_DIB - 1 + continua
 
-        # self.signals = signals
-        # self.signal_errs = continua_errs
+        self.signals = signals
+        self.signal_errs = continua_errs
         self.raw_DIB = raw_DIB
         self.continuum = continua
         self.dustcolumn = dustcolumn
@@ -260,7 +260,7 @@ class InjectionSightline(BaseModel):
 
             
     @staticmethod
-    def get_dust_profile(dust, emission, threshold = 0.03, ref_point = (167.4, -8.3), dust_profile_type = None, av_offset = 0, **kwargs):
+    def get_dust_profile(dust, emission, *args, threshold = 0.03, ref_point = (167.4, -8.3), dust_profile_type = None, av_offset = 0, **kwargs):
         if dust_profile_type == "average prior":
             # replicates dust extraction from the prior
             b_em, l_em = emission.world[0, :, :][1:]
@@ -288,6 +288,14 @@ class InjectionSightline(BaseModel):
             avg_dust_profile[dust.distance < 400] = 0
 
             return avg_dust_profile, std_dust_profile
+        if dust_profile_type == "flat":
+            xnear, xfar, avtot = args
+            dust_profile = np.zeros(dust.distance.shape)
+            dust_profile[(dust.distance > xnear) & (dust.distance <= xfar)] = avtot / (xfar - xnear)
+            std_dust_profile = 0.1 * dust_profile
+            return dust_profile, std_dust_profile
+
+
 
     @staticmethod
     def get_velo_profile(*args, velo_profile_type = "linear", v_noise_scale = 0.0, **kwargs):
