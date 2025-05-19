@@ -58,7 +58,7 @@ def plot_velo(chain, sl , min_walker = None, plot_objs = None, color = None, plo
     pos = (bin_pos[1:] + bin_pos[:-1])/2
     
     w = (bin_pos[1:] - bin_pos[:-1])
-    vparts=ax.violinplot(vel_samples, pos, widths = w, showmeans=False, showextrema=False, showmedians=True, side = 'both')
+    vparts=ax.violinplot(vel_samples, pos, widths = w, showmeans=False, showextrema=False, showmedians=True,)
     for vindx, part in enumerate(vparts['bodies']):
         part.set_facecolor( 'C'+str(vindx))
 

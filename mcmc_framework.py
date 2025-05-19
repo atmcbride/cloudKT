@@ -57,7 +57,8 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
                                     'sightline': sightline, 'log_likelihood': log_likelihood, 'log_priors': log_priors})
 
     # init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
-    init = 30 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+    init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+    init = 90 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
 
     init[:, ndim:] = np.abs(sightline.dAVdd.ravel()[np.newaxis, :] + 0.1*(np.random.random(init[:, ndim:].shape)-0.5))
     # init[:, ndim:][(init[:, ndim:] <= 0.1)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.1))
@@ -141,9 +142,9 @@ def log_probability(theta, sightline = None, log_likelihood = None, log_priors =
     """
     ll_fn, ll_kwargs = log_likelihood
     ll = ll_fn(theta, sightline = sightline, **ll_kwargs)
-    lp = evaluate_log_prior(theta, log_priors = log_priors, sightline = sightline, **kwargs)
+    lp, lp_list = evaluate_log_prior(theta, log_priors = log_priors, sightline = sightline, **kwargs)
 
-    return ll + lp, lp
+    return ll + lp, lp, *tuple(lp_list)
 
 def expand_theta(theta, sightline):
     mask = sightline.dAVdd_mask
@@ -151,11 +152,13 @@ def expand_theta(theta, sightline):
 
 def evaluate_log_prior(theta, log_priors = None, sightline = None, **kwargs):
     lp = 0
+    lp_list = []
     for lp_entry in log_priors:
         lp_fn, lp_kwargs = lp_entry
         lp_fn_val = lp_fn(theta, sightline = sightline, **lp_kwargs)        
         lp += lp_fn_val
-    return lp
+        lp_list.append(lp_fn_val)
+    return lp, lp_list
 
 def load_from_hdf5(h5_fname):
     reader = emcee.backends.HDFBackend(h5_fname)

@@ -97,8 +97,8 @@ class InjectionSightline(BaseModel):
 
             dAVdd[i], dAVdd_all[i], dAVdd_mask[i] = self.generate_dAV_dd_array_synthetic(
             star["DIST"], self.bins, dust_data.distance, dAVdd_profile)
-            dAVdd[i] = dAVdd[i] * 3
-            dAVdd_all[i] = dAVdd_all[i] * 3
+            dAVdd[i] = dAVdd[i] 
+            dAVdd_all[i] = dAVdd_all[i]
                 
             rv_star = star["VHELIO_AVG"]
             if injectRealContinuum:
@@ -125,7 +125,7 @@ class InjectionSightline(BaseModel):
                 dcol[d_i:] = 0
             # dustcolumn[i, :] = dcol
 
-        raw_DIB = self.integrateMockDIB(rvelo, dAVdd_profile)
+        raw_DIB = self.integrateMockDIB(rvelo, dAVdd_profile, dust_data = dust_data)
         signals = raw_DIB - 1 + continua
 
         self.signals = signals
@@ -195,9 +195,9 @@ class InjectionSightline(BaseModel):
         return res, res_err
 
 
-    def integrateMockDIB(self, rvelo, dAVdd):
+    def integrateMockDIB(self, rvelo, dAVdd, dust_data = None):
 
-
+        dust_dist = dust_data.distance
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
         peak_wavelength = self.dopplershift(rvelo)
         wavs_grid = np.tile(self.wavs_window, (len(rvelo), 1))
@@ -207,9 +207,11 @@ class InjectionSightline(BaseModel):
         )
         amp = self.differentialAmplitude(dAVdd, 1)
 
-        def single_signal(amp, bindex):
+        def single_signal(amp, star_distance, dust_distance):
             # amp[bindex :] = 0 # THIS MIGHT NEED TO BE -1
-
+            
+            amp = np.copy(amp)
+            amp[dust_distance > star_distance] = 0
             voxel_DIB_scaled = -voxel_DIB_unscaled * amp[:, np.newaxis]
             summed_DIB = np.sum(voxel_DIB_scaled, axis=0)
             # continuum = lambda x, m, b : m * (x - lambda0) + b
@@ -224,8 +226,8 @@ class InjectionSightline(BaseModel):
 
 
             bin_index = self.bin_inds[i]
-            # signals[i, :] = single_signal(bin_index)
-            signals[i, :] = single_signal(amp, 0)  # bin_index)
+            star_dist = star['DIST']
+            signals[i, :] = single_signal(amp, star_dist, dust_dist)  # bin_index)
         return signals
 
     def model_signals(self, rvelo, dAVdd=None, binsep=None):
@@ -260,7 +262,7 @@ class InjectionSightline(BaseModel):
 
             
     @staticmethod
-    def get_dust_profile(dust, emission, *args, threshold = 0.03, ref_point = (167.4, -8.3), dust_profile_type = None, av_offset = 0, **kwargs):
+    def get_dust_profile(dust, emission, *args, threshold = 0.03, ref_point = (167.4, -8.3), dust_profile_type = None, av_offset = 0, av_mult = 1, **kwargs):
         if dust_profile_type == "average prior":
             # replicates dust extraction from the prior
             b_em, l_em = emission.world[0, :, :][1:]
@@ -284,7 +286,7 @@ class InjectionSightline(BaseModel):
             dust_profiles = dust.dustmap[dust_indices[:, 1], dust_indices[:, 0]] # remember that the dustmap is in b, l, d
             avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
             std_dust_profile = np.nanstd(dust_profiles, axis = 0, ddof = 1)
-            avg_dust_profile = avg_dust_profile + av_offset
+            avg_dust_profile = av_mult * avg_dust_profile + av_offset
             avg_dust_profile[dust.distance < 400] = 0
 
             return avg_dust_profile, std_dust_profile

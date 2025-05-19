@@ -215,7 +215,7 @@ class Logprior_Average_Extinction:
         
         dust_profiles = dust.dustmap[dust_indices[:, 1], dust_indices[:, 0]] # remember that the dustmap is in b, l, d
         avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
-        avg_dust_profile[dust.distance < 400] = 0
+        # avg_dust_profile[dust.distance < 400] = 0
         std_dust_profile = np.nanstd(dust_profiles, axis = 0, ddof = 1)
 
         distance = dust.distance
