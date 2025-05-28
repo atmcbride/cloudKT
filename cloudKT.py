@@ -113,11 +113,11 @@ def pipeline(config):
             logger.info("Running MCMC...")
             sampler = run_mcmc(
                 sightlines[i], mcmc_config, dust, emission_CO, pool=pool, filename=mcmc_file
-            )
+            , **mcmc_config)
 
     for i in range(len(sightlines)):
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
-        reader = load_from_hdf5(mcmc_file)
+        reader = load_from_hdf5(mcmc_file)s
         chain = reader.get_chain()
         for j in range(0, sightlines[i].ndim, 1):
             fig, ax = plot_walkers(chain, j, sightline = sightlines[i])
