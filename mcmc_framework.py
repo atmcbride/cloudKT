@@ -9,7 +9,7 @@ from utilities import load_module
 
 logger = logging.getLogger(__name__)
 
-def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool = None, filename = None, **kwargs):
+def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool = None, filename = None, init_vabs = 15, **kwargs):
     """"
     Run the MCMC
     """
@@ -57,8 +57,11 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
                                     'sightline': sightline, 'log_likelihood': log_likelihood, 'log_priors': log_priors})
 
     # init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+
+
     init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
     init = 90 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+    init = 2 * init_vabs *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
 
     init[:, ndim:] = np.abs(sightline.dAVdd.ravel()[np.newaxis, :] + 0.1*(np.random.random(init[:, ndim:].shape)-0.5))
     # init[:, ndim:][(init[:, ndim:] <= 0.1)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.1))
@@ -121,6 +124,8 @@ def run_mcmc_smaller(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100
 
     init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5) # KEEP
     init = 30 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
+    
+
     # init = 60 * (np.random.random((nwalkers, ndim_amp)) - 0.5)
 
     init[:, ndim:] = np.abs(sightline.dAVdd.ravel()[np.newaxis, :] + 0.1*(np.random.random(init[:, ndim:].shape)-0.5))
