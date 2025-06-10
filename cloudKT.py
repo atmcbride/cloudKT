@@ -69,8 +69,13 @@ def pipeline(config):
     if "foreground" in config['SIGHTLINE_SETUP']['MODULE']:
         uses_foreground = True
     sightline_setup_config = config['SIGHTLINE_SETUP']['PARAMETERS']
+
+
     sightline_setup_config["POPULATE_FROM_FILES"] = args.populate_from_files == "true"
-    sightline_setup_config["STARS_TO_FILES"] = args.stars_to_files == "true"
+    if args.populate_from_files=="true":
+        sightline_setup_config["STARS_TO_FILES"] = False
+    else:
+        sightline_setup_config["STARS_TO_FILES"] = args.stars_to_files == "true"
 
     sightlines = sightline_setup(stars, dust, emission_CO, emission_HI, sightline_setup_config, program_directory = program_directory)
     # sightline_module = load_module(config["SIGHTLINE"]["MODULE"])

@@ -27,8 +27,8 @@ highLat = get_highLat()
 
 class InjectionSightline(BaseModel):
     def __init__(
-        self, stars, dust_data, rvelo_profile, dust_profile, *args, dust_profile_err = None, bins=None, emission= None, coordinates = None, star_selection_kwargs = None, injectRealContinuum = True, **kwargs
-    ):
+        self, stars, dust_data, rvelo_profile, dust_profile, *args, dust_profile_err = None, bins=None, emission= None, coordinates = None, 
+                star_selection_kwargs = None, injectRealContinuum = True, velocity_scatter_scale = 0.0, amp_scatter_scale = 0.0, **kwargs):
         super().__init__(self, stars, **kwargs)
         # if star_selection is None:
         if self.select_stars is None:
@@ -53,7 +53,8 @@ class InjectionSightline(BaseModel):
         self.get_DIBs_skeleton(dust_data, **kwargs)
 
 
-        self.makeSyntheticDIBs(rvelo_profile, dust_data, dAVdd_profile = dust_profile, dAVdd_profile_err = dust_profile_err, injectRealContinuum = injectRealContinuum)
+        self.makeSyntheticDIBs(rvelo_profile, dust_data, dAVdd_profile = dust_profile, dAVdd_profile_err = dust_profile_err, 
+                               injectRealContinuum = injectRealContinuum, velocity_scatter_scale = velocity_scatter_scale, amp_scatter_scale = amp_scatter_scale)
 
         self.ndim = len(self.voxel_dAVdd)
         self.nsig = len(self.stars)
@@ -81,7 +82,7 @@ class InjectionSightline(BaseModel):
 
         self.bins = bins
 
-    def makeSyntheticDIBs(self, rvelo, dust_data, dAVdd_profile=None, dAVdd_profile_err = None, emission = None, injectRealContinuum=True):
+    def makeSyntheticDIBs(self, rvelo, dust_data, dAVdd_profile=None, dAVdd_profile_err = None, emission = None, injectRealContinuum=True, velocity_scatter_scale = 0.0, amp_scatter_scale = 0.0,):
         continua = np.zeros((len(self.stars), len(self.wavs_window)))
         continua_errs = np.zeros((len(self.stars), len(self.wavs_window)))
         dustcolumn = np.zeros((len(self.stars), dust_data.dustmap.shape[-1]))
@@ -109,7 +110,7 @@ class InjectionSightline(BaseModel):
                 continua_errs[i, :] = continuum_uncertainty[self.window]
             else:
                 continuum = 1 + np.random.normal(
-                    scale=1 / star["SNR"], size=np.sum(self.window)
+                     scale=1 / star["SNR"], size=np.sum(self.window)
                 )
                 continuum_uncertainty = np.ones(np.sum(self.window)) * 1 / star["SNR"]
                 continua[i, :] = continuum
@@ -125,7 +126,7 @@ class InjectionSightline(BaseModel):
                 dcol[d_i:] = 0
             # dustcolumn[i, :] = dcol
 
-        raw_DIB = self.integrateMockDIB(rvelo, dAVdd_profile, dust_data = dust_data)
+        raw_DIB = self.integrateMockDIB(rvelo, dAVdd_profile, dust_data = dust_data, velocity_scatter_scale = velocity_scatter_scale, amp_scatter_scale = amp_scatter_scale)
         signals = raw_DIB - 1 + continua
 
         self.signals = signals
@@ -195,8 +196,8 @@ class InjectionSightline(BaseModel):
         return res, res_err
 
 
-    def integrateMockDIB(self, rvelo, dAVdd, dust_data = None):
-
+    def integrateMockDIB(self, rvelo, dAVdd, dust_data = None, velocity_scatter_scale = 0.0, amp_scatter_scale = 0.0):
+        rvelo = rvelo + velocity_scatter_scale * (rvelo.max() - rvelo.min()) * np.random.normal(size = rvelo.shape)
         dust_dist = dust_data.distance
         signals = np.zeros((len(self.stars), len(self.wavs_window)))
         peak_wavelength = self.dopplershift(rvelo)
@@ -207,10 +208,11 @@ class InjectionSightline(BaseModel):
         )
         amp = self.differentialAmplitude(dAVdd, 1)
 
-        def single_signal(amp, star_distance, dust_distance):
+        def single_signal(amp, star_distance, dust_distance, amp_scatter_scale = 0.0):
             # amp[bindex :] = 0 # THIS MIGHT NEED TO BE -1
             
             amp = np.copy(amp)
+            amp = np.abs(amp + amp_scatter_scale * amp * np.random.normal(size=amp.shape))
             amp[dust_distance > star_distance] = 0
             voxel_DIB_scaled = -voxel_DIB_unscaled * amp[:, np.newaxis]
             summed_DIB = np.sum(voxel_DIB_scaled, axis=0)
@@ -227,7 +229,7 @@ class InjectionSightline(BaseModel):
 
             bin_index = self.bin_inds[i]
             star_dist = star['DIST']
-            signals[i, :] = single_signal(amp, star_dist, dust_dist)  # bin_index)
+            signals[i, :] = single_signal(amp, star_dist, dust_dist, amp_scatter_scale)  # bin_index)
         return signals
 
     def model_signals(self, rvelo, dAVdd=None, binsep=None):

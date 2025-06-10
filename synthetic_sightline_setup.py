@@ -48,7 +48,7 @@ def initialize_synthetic_sightlines(stars, dust, emission_CO, emission_HI, sight
         velo_profile = Sightline.get_velo_profile(dust, -vabs, vabs, 400, 600)
 
 
-        sightline = Sightline(stars, dust, velo_profile, dust_profile, dust_profile_err = dust_profile_err, data_processing_kwargs = data_processing_kwargs, star_selection_kwargs = star_selection_kwargs)
+        sightline = Sightline(stars, dust, velo_profile, dust_profile, dust_profile_err = dust_profile_err, data_processing_kwargs = data_processing_kwargs, star_selection_kwargs = star_selection_kwargs, **sightline_config["SIGHTLINE"]["PARAMETERS"])
         sightlines.append(sightline)
 
     return sightlines
