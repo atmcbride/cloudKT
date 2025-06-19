@@ -92,41 +92,7 @@ def pipeline(config):
         if args.stars_to_files == "true":
             if not os.path.exists(program_directory + "/sightline_outputs/"):
                 os.mkdir(program_directory + "/sightline_outputs/")
-            sightlines[i].st
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            ars.write(program_directory + "/sightline_outputs/stars_{}.fits".format(i), overwrite = True)
+            sightlines[i].stars.write(program_directory + "/sightline_outputs/stars_{}.fits".format(i), overwrite = True)
     #     else:
     #         logger.info("Populating sightlines from previously-saved .fits files...")
     #         selection_kwargs = {"fname": program_directory + "/sightline_outputs/stars_{}.fits".format(i)}
