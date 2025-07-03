@@ -134,7 +134,7 @@ def pipeline(config):
             plt.close()
 
         plot_signals = plot_signals_sample_fg if uses_foreground else plot_signals_sample
-        fig, ax = plot_signals(chain, sightlines[i])
+        fig, ax = plot_signals(reader, sightlines[i])
 
         fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
@@ -152,7 +152,7 @@ def pipeline(config):
         postprocessing_module = load_module("postprocessing")
         chi2_statistics = getattr(postprocessing_module, "chi2_statistics")
         per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sightlines[i], chain)
-        logger.info("Sightline {} chi2 ".format(i), sightline_chi2)
+        logger.info("Sightline {} chi2 ".format(i), str(sightline_chi2))
         metrics_out["sl_{}".format(i)] = {"sightline_chi2": sightline_chi2, "median_chi2": median_star_chi2,
                                             "std_chi2": std_star_chi2, "perstar_chi2": list(per_star_chi2)}
     with open(program_directory + "/sightline_outputs/sightline_metrics.json", mode = "a") as f:

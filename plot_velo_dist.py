@@ -28,11 +28,11 @@ def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None
 
     medians = np.nanmedian(samples[:, :], axis = 0)
     if bestprob:
-        lp = lnprob
+        lp = lnprob.T
         lp[:, :-100] = -np.infty
         w_ind, stp_ind = np.unravel_index(np.argmax(lp), lp.shape)
 
-        medians = chain[w_ind, stp_ind, :]
+        best_vals = chain[w_ind, stp_ind, :]
 
     stdevs = np.nanstd(samples[min_walker_val:, :], ddof = 1, axis = 0)
 
@@ -85,6 +85,11 @@ def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None
             for pos in bin_pos:
                 ax.plot((pos, pos), (-10, 20), color = 'k', linestyle = 'dotted')
                 # axs[1].plot((pos, pos), (0, 1), color = 'k', linestyle = 'dotted')
+
+        if bestprob:
+            for bin_idx in range(len(bin_pos)-1):
+                bin_min, bin_max = bin_pos[bin_idx], bin_pos[bin_idx + 1] #########
+                ax.plot((bin_min, bin_max), (best_vals[bin_idx], best_vals[bin_idx]), color = "green")
     
     plot_violin_half = False
     if plot_violin_half:
@@ -159,9 +164,13 @@ def get_typical_emission_profile(emission):
     return np.nanmedian(emission_filament, axis = (1,2))
 
 
-def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None, metrics = None):
+def plot_velo_dist_busy(reader, sl, emission = None, dust = None, avprior = None, metrics = None):
+    chain = reader.get_chain()
+    logprob = reader.get_log_prob()
+
+
     fig, ax = plt.subplots(figsize = (10, 10))
-    fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax))
+    fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax), lnprob = logprob, bestprob= True)
 
     aux1 = ax.inset_axes([0, -0.1, 1, 0.1])
     aux2 = ax.inset_axes([0, 1, 1, 0.4])
@@ -196,6 +205,11 @@ def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None,
         aux1.hlines(metrics, sl.bins[inds -1], sl.bins[inds])
         aux1.set_xlabel('Distance (pc)')
         aux1.set_ylabel(r"$\chi^2$")
+
+    if True: 
+        best_step, best_walker = np.unravel_index(np.argmax(logprob), logprob.shape)
+        vbest = chain[best_step, best_walker, :sl.ndim]
+        # davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
 
 
     aux2.hlines(prior_av, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = "solid", label = "Avg prior")

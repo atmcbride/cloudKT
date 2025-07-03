@@ -2,16 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_signals_sample(chain, sl, logprob = None):
+def plot_signals_sample(reader, sl, logprob = None):
+    chain = reader.get_chain()
+    logprob = reader.get_log_prob()
     samples = chain[:, int(0.8 * chain.shape[1]), :]
     v = np.nanmedian(samples[:, :sl.ndim], axis = 0)
     davdd_all = np.nanmedian(samples[:, sl.ndim:], axis = 0).reshape((sl.nsig, sl.ndim))
     wavs_window = sl.wavs_window
 
-    if False: 
+    if True: 
         best_step, best_walker = np.unravel_index(np.argmax(logprob), logprob.shape)
+        v = chain[best_step, best_walker, :sl.ndim]
         davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
-        print(davdd.shape)
+
 
     def sample_signal():
         idx = (np.random.choice(samples.shape[0]))
@@ -88,7 +91,11 @@ def model_signals_fg(rvelo, sl, dAVdd):
     return voxeldiffDIB, unsummed_signals, fgdiffDIB
 
 
-def plot_signals_sample_fg(chain, sl, logprob = None):
+def plot_signals_sample_fg(reader, sl, logprob = None):
+    chain = reader.get_chain()
+    logprob = reader.get_log_prob()
+
+    print("based on shape issues this could break, check!")
     samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
 
     wavs_window = sl.wavs_window
