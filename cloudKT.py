@@ -172,8 +172,8 @@ def pipeline(config):
         fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
 
-        fig, ax = plot_velo_dist_busy(chain, sightlines[i], dust = dust, emission = emission_CO, avprior = None, metrics = per_star_chi2)
-        fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i))
+        # fig, ax = plot_velo_dist_busy(reader, sightlines[i], dust = dust, emission = emission_CO, avprior = None, metrics = per_star_chi2)
+        # fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i))
 
 
         # fig, ax, dist_xx, med_velo, std_velo = plot_velo(chain, sightlines[i])
