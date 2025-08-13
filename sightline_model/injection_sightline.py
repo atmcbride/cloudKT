@@ -181,10 +181,19 @@ class InjectionSightline(BaseModel):
         TEFFdiff = np.abs(reference_stars["TEFF"] - star["TEFF"])
         LOGGdiff = np.abs(reference_stars["LOGG"] - star["LOGG"])
         M_Hdiff = np.abs(reference_stars["M_H"] - star["M_H"])
-        starAnalogs = np.logical_and.reduce(
-            [(SNRdiff < 30), (TEFFdiff < 250), (LOGGdiff < 0.2), (M_Hdiff < 0.1)]
-        )
-        analog_i = np.argmin(reference_stars[starAnalogs]["SFD_EBV"])
+
+        try:
+            starAnalogs = np.logical_and.reduce(
+                    [(SNRdiff < 30), (TEFFdiff < 250), (LOGGdiff < 0.2), (M_Hdiff < 0.1)])
+            analog_i = np.argmin(reference_stars[starAnalogs]["SFD_EBV"])
+        except:
+            try: 
+                starAnalogs = np.logical_and.reduce(
+                        [(SNRdiff < 60), (TEFFdiff < 500), (LOGGdiff < 0.4), (M_Hdiff < 0.2)])
+                analog_i = np.argmin(reference_stars[starAnalogs]["SFD_EBV"])
+            except:
+                analog_i = np.random.choice(len(reference_stars))
+            
         analog = reference_stars[analog_i]
         medres = fits.open(get_medres(analog["TEFF"], analog["LOGG"], analog["M_H"]))
         aspcap = fits.open(getASPCAP(analog))
