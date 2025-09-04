@@ -80,12 +80,10 @@ def pipeline(config):
     sightlines = sightline_setup(stars, dust, emission_CO, emission_HI, sightline_setup_config, program_directory = program_directory)
         
     for i in range(len(sightlines)):
-
-    # for i in range((31, 30)):
         if args.stars_to_files == "true":
             if not os.path.exists(program_directory + "/sightline_outputs/"):
                 os.mkdir(program_directory + "/sightline_outputs/")
-            sightlines[i].stars.write(program_directory + "/sightline_outputs/stars_{}.fits".format(i+31), overwrite = True)
+            sightlines[i].stars.write(program_directory + "/sightline_outputs/stars_{}.fits".format(i), overwrite = True)
 
 
     logger.info("--- Running Model ---")
@@ -96,9 +94,8 @@ def pipeline(config):
 
     if args.run_MCMC == "true":
         for i in range(len(sightlines)):
-        # for i in range((31, 30)):
-            logger.info("Running MCMC for sightline {}...".format(i+31))
-            mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i+31)
+            logger.info("Running MCMC for sightline {}...".format(i))
+            mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
             pool = Pool(12)
             logger.info("Running MCMC...")
             sampler = run_mcmc(
@@ -106,9 +103,8 @@ def pipeline(config):
             , **mcmc_config)
 
     for i in range(len(sightlines)):
-    # for i in range((31, 30)):
 
-        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i+31)
+        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
         # for j in range(0, sightlines[i].ndim, 1):
@@ -123,7 +119,7 @@ def pipeline(config):
         plot_signals = plot_signals_sample_fg if uses_foreground else plot_signals_sample
         fig, ax = plot_signals(reader, sightlines[i])
 
-        fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i+31))
+        fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
 
 
@@ -133,15 +129,15 @@ def pipeline(config):
 
     metrics_out = {}
     for i in range(len(sightlines)):
-    # for i in range((31, 30)):
 
-        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i+31)
+
+        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
         postprocessing_module = load_module("postprocessing")
         chi2_statistics = getattr(postprocessing_module, "chi2_statistics")
         per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sightlines[i], chain)
-        logger.info("Sightline {} chi2 ".format(i+31), str(sightline_chi2))
+        logger.info("Sightline {} chi2 ".format(i), str(sightline_chi2))
         metrics_out["sl_{}".format(i)] = {"sightline_chi2": sightline_chi2, "median_chi2": median_star_chi2,
                                             "std_chi2": std_star_chi2, "perstar_chi2": list(per_star_chi2)}
     with open(program_directory + "/sightline_outputs/sightline_metrics.json", mode = "a") as f:
@@ -151,18 +147,17 @@ def pipeline(config):
         os.mkdir(program_directory + "/figures/")
     
     for i in range(len(sightlines)):
-    # for i in range((31, 30)):
 
         sl = sightlines[i]
         # sl = sightlines[i]
 
-        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i+31)
+        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
         per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sl, chain)
 
         fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sl)
-        fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i+31))
+        fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
 
         # fig, ax = plot_velo_dist_busy(reader, sightlines[i], dust = dust, emission = emission_CO, avprior = None, metrics = per_star_chi2)
