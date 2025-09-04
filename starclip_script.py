@@ -9,7 +9,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 def sigma_clip_save_stars(input_dir, output_dir, make_plots = False, overwrite = False):
-
     if os.path.exists(output_dir) & (not overwrite):
         print('New folder already exists! If you mean to overwrite existing location, specify --overwrite.')
         return
@@ -37,15 +36,19 @@ def sigma_clip_save_stars(input_dir, output_dir, make_plots = False, overwrite =
     if "foreground" in config['SIGHTLINE_SETUP']['MODULE']:
         uses_foreground = True
     sightline_setup_config = config['SIGHTLINE_SETUP']['PARAMETERS']
+    sightline_setup_config["POPULATE_FROM_FILES"] = True
+    sightlines = sightline_setup(stars, dust, emission_CO, emission_HI, sightline_setup_config, program_directory = input_dir)
 
+    with open(input_dir + "/sightline_outputs/sightline_metrics.json", mode = "r") as f:
+        initial_chi2_json = json.load(f)
 
-    sightline_setup_config["POPULATE_FROM_FILES"] = args.populate_from_files == "true"
-    if args.populate_from_files=="true":
-        sightline_setup_config["STARS_TO_FILES"] = False
-    else:
-        sightline_setup_config["STARS_TO_FILES"] = args.stars_to_files == "true"
-
-    sightlines = sightline_setup(stars, dust, emission_CO, emission_HI, sightline_setup_config, program_directory = program_directory)
+    for i in range(len(sightlines)):
+        stars = initial_sightlines[i].stars
+        chi2_entry = np.array(initial_per_star_chi2[i])
+        select_on_chi2 = chi2_entry < 2
+        stars = stars[select_on_chi2]
+        print(np.sum(select_on_chi2), len(chi2_entry))
+        stars.write(output_dir + "/sightline_outputs/stars_{}.fits".format(i), overwrite = False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process star data:")
