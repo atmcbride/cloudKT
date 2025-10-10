@@ -6,7 +6,7 @@ from utilities import load_module
 logger = logging.getLogger(__name__)
 
 
-def initialize_synthetic_sightlines(stars, dust, emission_CO, emission_HI, sightline_config, program_directory = None, **kwargs):
+def initialize_synthetic_sightlines(stars, dust, emission_CO, emission_HI, sightline_config, program_directory = None, dnear = None, dfar = None, **kwargs):
     sightlines = []
     
 
@@ -41,11 +41,21 @@ def initialize_synthetic_sightlines(stars, dust, emission_CO, emission_HI, sight
 
         coords = None
 
+        if dnear == None:
+            if 'DNEAR' in initialization_params.keys():
+                dnear = initialization_params['DNEAR']
+            else:
+                dnear = 400
+        if dfar == None:
+            if 'DFAR' in initialization_params.keys():
+                dfar = initialization_params['DFAR']
+            else:
+                dfar = 600
 
-        dust_profile, dust_profile_err = Sightline.get_dust_profile(dust, emission_CO, 400, 600, 4, **initialization_params)
+        dust_profile, dust_profile_err = Sightline.get_dust_profile(dust, emission_CO, dnear, dfar, 4, **initialization_params)
         # dust_profile[dust.distance < 400] = 0
         vabs = initialization_params['v_abs']
-        velo_profile = Sightline.get_velo_profile(dust, -vabs, vabs, 400, 600)
+        velo_profile = Sightline.get_velo_profile(dust, -vabs, vabs, dnear, dfar, **initialization_params)
 
 
         sightline = Sightline(stars, dust, velo_profile, dust_profile, dust_profile_err = dust_profile_err, data_processing_kwargs = data_processing_kwargs, star_selection_kwargs = star_selection_kwargs, **sightline_config["SIGHTLINE"]["PARAMETERS"])

@@ -3,6 +3,7 @@ import argparse
 from astropy.table import Table
 import tqdm
 import sys
+import shutil
 import os
 import json
 from utilities import load_module, load_json, merge_configs
@@ -18,6 +19,7 @@ def sigma_clip_save_stars(input_dir, output_dir, make_plots = False, overwrite =
     else:
         os.makedirs(output_dir + '/figures', exist_ok = True)
         os.makedirs(output_dir + '/sightline_outputs', exist_ok = True)
+        shutil.copy(input_dir + '/CONFIG.json', output_dir + '/CONFIG.json')
 
     # Get config setup
     if os.path.exists(input_dir + "/CONFIG.json"):
@@ -46,7 +48,8 @@ def sigma_clip_save_stars(input_dir, output_dir, make_plots = False, overwrite =
     else:
         sl_stars = []
         star_paths = glob.glob(input_dir + "/sightline_outputs/stars_*.fits")
-        for star_path in star_paths:
+    for i in tqdm.tqdm(range(len(star_paths))):
+            star_path = input_dir + "/sightline_outputs/stars_{}.fits".format(i)
             sl_stars.append(Table.read(star_path))
 
     with open(input_dir + "/sightline_outputs/sightline_metrics.json", mode = "r") as f:
@@ -57,7 +60,9 @@ def sigma_clip_save_stars(input_dir, output_dir, make_plots = False, overwrite =
         chi2_entry = chi2_json["sl_{}".format(i)]
         perstar_chi2 = np.array(chi2_entry['perstar_chi2'])
         print(perstar_chi2)
+
         select_on_chi2 = perstar_chi2 < 2
+        print(sum(select_on_chi2), len(select_on_chi2))
         stars = stars[select_on_chi2]
         stars.write(output_dir + "/sightline_outputs/stars_{}.fits".format(i), overwrite = overwrite)
 
