@@ -95,3 +95,18 @@ def select_stars(self, tab, **kwargs):
 
     return tab
 
+def select_half_filament(self, tab, half_select = "lessthan", l_cutoff = 162.5, **kwargs):
+    tab = tab[select_on_emission(tab,  **kwargs)]
+    if half_select == "lessthan":
+        tab = tab[tab['GLON'] < l_cutoff]
+    elif half_select == "greaterthan":
+        tab = tab[tab['GLON'] > l_cutoff]
+    tab = tab[select_on_EW(tab, **kwargs)]
+
+    # if reset_position:
+    tab['GLON_TRUE'] = np.copy(tab['GLON'])
+    tab['GLAT_TRUE'] = np.copy(tab['GLAT'])
+    tab['GLON'] = 167.4 + np.random.normal(scale = 0.4, size = len(tab))
+    tab['GLAT'] = -8.3 + np.random.normal(scale = 0.4, size = (len(tab)))
+
+    return tab
