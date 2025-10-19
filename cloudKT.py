@@ -107,14 +107,6 @@ def pipeline(config):
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
-        # for j in range(0, sightlines[i].ndim, 1):
-        #     fig, ax = plot_walkers(chain, j, sightline = sightlines[i])
-        #     fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
-        #     plt.close()
-        # for j in range(sightlines[i].ndim, 2 * sightlines[i].ndim, 2):
-        #     fig, ax = plot_walkers(chain, j, sightline = sightlines[i])
-        #     fig.savefig(program_directory+ '/figures/chain_sl{i}_var{j}.jpg'.format(i=i, j=j))
-        #     plt.close()
 
         plot_signals = plot_signals_sample_fg if uses_foreground else plot_signals_sample
         fig, ax = plot_signals(reader, sightlines[i])
@@ -123,13 +115,8 @@ def pipeline(config):
         plt.close()
 
 
-        # fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sightlines[i])
-        # fig.savefig(program_directory + "/figures/v_d_sl_{i}.jpg".format(i=i))
-        # plt.close()
-
     metrics_out = {}
     for i in range(len(sightlines)):
-
 
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
