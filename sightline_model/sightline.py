@@ -144,7 +144,7 @@ class Sightline(BaseModel):
             amp[bindex:] = 0  # THIS MIGHT NEED TO BE -1
 
             voxel_DIB_scaled = -voxel_DIB_unscaled * amp[:, np.newaxis]
-            summed_DIB = np.sum(voxel_DIB_scaled, axis=0)
+            summed_DIB = np.nansum(voxel_DIB_scaled, axis=0)
             return summed_DIB + 1
 
         for i in range(len(self.stars)):

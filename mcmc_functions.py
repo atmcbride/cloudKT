@@ -1,25 +1,40 @@
 import numpy as np
 from scipy.signal import correlate, correlation_lags
 
-def reshape_theta(ndim, nstars, mask):
-    def theta_decorator(func):
-        def theta_wrapper(theta, *args, **kwargs):
-            theta = np.copy(theta)
-            v = theta[:ndim]
-            av = theta[ndim:].reshape(nstars, ndim)
-            av[mask] = np.nan
-            theta_reshaped = (v, av)
-            return func(theta_reshaped, *args, **kwargs)
-        return theta_wrapper
-    return theta_decorator
+# def reshape_theta(ndim, nstars, mask):
+#     def theta_decorator(func):
+#         def theta_wrapper(theta, *args, **kwargs):
+#             theta = np.copy(theta)
+#             v = theta[:ndim]
+#             av = theta[ndim:].reshape(nstars, ndim)
+#             av[mask] = np.nan
+#             theta_reshaped = (v, av)
+#             return func(theta_reshaped, *args, **kwargs)
+#         return theta_wrapper
+#     return theta_decorator
 
+def reshape_theta(func):
+    def wrapper(theta, *args, sightline = None, **kwargs):
+        if sightline is None:
+            raise ValueError("Expected 'Sightline' kwarg")
+        ndim, nsig = sightline.ndim, sightline.nsig
+        mask = sightline.dAVdd_mask
+        theta = np.copy(theta)
+        v = theta[:sightline.ndim]
+        av = theta[sightline.ndim:].reshape(nsig, ndim)
+        av[mask] = np.nan
+        theta_reshaped = (v, av)
+        return func(theta_reshaped, *args, sightline = Sightline, **kwargs)
+    return wrapper
 
 # ndim = len(sightline.voxel_dAVdd)
 # nsig = len(sightline.stars)
 
+@reshape_theta
 def log_likelihood(theta, sightline = None, **kwargs):
-    v = theta[ :len(sightline.voxel_dAVdd)]
-    av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
+    # v = theta[ :len(sightline.voxel_dAVdd)]
+    # av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
+    v, av = theta
     signal = sightline.signals
     sigma = sightline.signal_errs
     val = - 0.5 * np.nansum((signal - sightline.model_signals(v, dAVdd = av))**2 / (sigma**2)) # IS THIS WRONG
@@ -41,21 +56,26 @@ def log_likelihood(theta, sightline = None, **kwargs):
 #         return -np.inf
 #     else:
 #         return val
-    
+
+@reshape_theta    
 def log_prior_v(theta, sightline = None, vmin = -8.5, vmax = 17.5, **kwargs):
-    v = theta[ :sightline.ndim]
+    v, av = theta
     if (np.any(v < vmin)) or (np.any(v > vmax)):
         return -np.inf
     return 0.0
 
+@reshape_theta
 def log_prior_davdd(theta, sightline = None, **kwargs):
-    av = theta[sightline.ndim:].reshape(-1, sightline.ndim)
+    # av = theta[sightline.ndim:].reshape(-1, sightline.ndim)
+    v, av = theta
     if ((np.any(av < 0))):
         return -np.inf
     return 0.0
 
+@reshape_theta
 def log_prior_davdd_reg(theta, sightline = None, width_factor = 10, **kwargs):
-    av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim)) # needs copy in order to not throw a NaN
+    # av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim)) # needs copy in order to not throw a NaN
+    v, av = theta
     mask = sightline.dAVdd_mask
     av[mask] = np.nan
     avmed = sightline.voxel_dAVdd
@@ -64,8 +84,10 @@ def log_prior_davdd_reg(theta, sightline = None, width_factor = 10, **kwargs):
     lp_val =  np.nansum(- 0.5 * np.nansum((av - avmed)**2 / (2 * avstd**2)))
     return lp_val
 
+@reshape_theta
 def log_prior_davdd_reg_group(theta, sightline = None, width_factor = 3, **kwargs):
-    av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
+    # av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
+    v, av = theta
     mask = sightline.dAVdd_mask
     av[mask] = np.nan
     avmed = np.nanmedian(av, axis = 0,)
@@ -97,13 +119,16 @@ class Logprior_Foreground:
         matrix = X * theta[:, np.newaxis]
         return np.nansum(matrix, axis =1).item()
     
+    @reshape_theta
     def logprior_foreground_v(self, theta, sightline = None, foreground_distance = 400, **kwargs):    
-        v = np.copy(theta[:sightline.ndim])
+        # v = np.copy(theta[:sightline.ndim])
+        v, av = theta
         foreground = self.distance <= foreground_distance
         prior_val = np.zeros(self.distance.shape)
         prior_val[foreground] = (- 0.5 * (v - self.pointfit)**2 / (self.pointfit_width**2))[foreground]
         return np.nansum(prior_val)
-        
+
+    @reshape_theta
     def logprior_foreground_av(self, theta, sightline = None, foreground_distance = 401):
         av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
         foreground = self.distance <= foreground_distance
@@ -150,7 +175,8 @@ class Logprior_Average_Extinction_OLD:
         self.avg_dAVdd = avg_dAVdd
         self.std_dAVdd = std_avg_dAVdd
         pass
-        
+
+    @reshape_theta        
     def log_prior_avg_av(self, theta, sightline=None, width_factor= 10):
         av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
         mask = sightline.dAVdd_mask
@@ -199,7 +225,8 @@ class Logprior_Average_Extinction_:
         self.avg_dAVdd = avg_dAVdd
         self.std_dAVdd = std_avg_dAVdd
         pass
-        
+
+    @reshape_theta    
     def log_prior_avg_av(self, theta, sightline=None, width_factor= 10):
         av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
         mask = sightline.dAVdd_mask
@@ -249,7 +276,7 @@ class Logprior_Average_Extinction:
         self.avg_dAVdd = avg_dAVdd
         self.std_dAVdd = std_avg_dAVdd
 
-        
+    @reshape_theta    
     def log_prior_avg_av(self, theta, sightline=None, width_factor= 10):
         av = np.copy(theta[sightline.ndim:].reshape(-1, sightline.ndim))
         mask = sightline.dAVdd_mask
