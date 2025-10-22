@@ -140,6 +140,23 @@ def run_mcmc_smaller(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100
 
     return sampler
 
+
+def reshape_theta(func):
+    def wrapper(theta, *args, sightline = None, **kwargs):
+        if sightline is None:
+            raise ValueError("Expected 'Sightline' kwarg")
+        ndim, nsig = sightline.ndim, sightline.nsig
+        mask = sightline.dAVdd_mask
+        theta = np.copy(theta)
+        v = theta[:sightline.ndim]
+        av = theta[sightline.ndim:].reshape(nsig, ndim)
+        av[mask] = np.nan
+        theta_reshaped = (v, av)
+        return func(theta_reshaped, *args, sightline = sightline, **kwargs)
+    return wrapper
+
+
+@reshape_theta
 def log_probability(theta, sightline = None, log_likelihood = None, log_priors = None, **kwargs):
     """
     For a given input vector theta, populated Sightline object (for data and modeling functions), log-likelihood function with inputs,
