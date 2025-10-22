@@ -1,6 +1,22 @@
 import numpy as np
 from scipy.signal import correlate, correlation_lags
 
+def reshape_theta(ndim, nstars, mask):
+    def theta_decorator(func):
+        def theta_wrapper(theta, *args, **kwargs):
+            theta = np.copy(theta)
+            v = theta[:ndim]
+            av = theta[ndim:].reshape(nstars, ndim)
+            av[mask] = np.nan
+            theta_reshaped = (v, av)
+            return func(theta_reshaped, *args, **kwargs)
+        return theta_wrapper
+    return theta_decorator
+
+
+# ndim = len(sightline.voxel_dAVdd)
+# nsig = len(sightline.stars)
+
 def log_likelihood(theta, sightline = None, **kwargs):
     v = theta[ :len(sightline.voxel_dAVdd)]
     av = theta[len(sightline.voxel_dAVdd):].reshape(-1, len(sightline.voxel_dAVdd))
