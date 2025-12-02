@@ -6,6 +6,7 @@ from scipy.signal import correlate, correlation_lags
 from mcmc_functions import Logprior_Average_Extinction
 import json
 
+
 def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None, plot_lines = False, plot_box = False, plot_violin = True, bestprob = False, lnprob = None):
     samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
     if plot_objs == None:
