@@ -1,19 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def sample_from_chain(chain, burnin = 200, thin = 20):
+    return chain[burnin::thin, :, :].reshape(-1, chain.shape[-1])
+
 
 def plot_signals_sample(reader, sl, logprob = None):
     chain = reader.get_chain()
     logprob = reader.get_log_prob()
-    samples = chain[:, int(0.8 * chain.shape[1]), :]
-    v = np.nanmedian(samples[:, :sl.ndim], axis = 0)
-    davdd_all = np.nanmedian(samples[:, sl.ndim:], axis = 0).reshape((sl.nsig, sl.ndim))
+    # samples = chain[:, int(0.8 * chain.shape[1]), :]
+
+    # v = np.nanmedian(samples[:, :sl.ndim], axis = 0)
+    # davdd_all = np.nanmedian(samples[:, sl.ndim:], axis = 0).reshape((sl.nsig, sl.ndim))
     wavs_window = sl.wavs_window
 
-    if True: 
-        best_step, best_walker = np.unravel_index(np.argmax(logprob), logprob.shape)
-        v = chain[best_step, best_walker, :sl.ndim]
-        davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
+    # if True: 
+    #     best_step, best_walker = np.unravel_index(np.argmax(logprob), logprob.shape)
+    #     v = chain[best_step, best_walker, :sl.ndim]
+    #     davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
+
+    samples = sample_from_chain(chain)
+    v = np.nanmedian(samples, axis = 0)[:sl.ndim]
+    davdd_all = np.nanmedian(samples, axis = 0)[sl.ndim:].reshape((sl.nsig, sl.ndim))
 
 
     def sample_signal():

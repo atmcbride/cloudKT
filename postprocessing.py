@@ -21,3 +21,6 @@ def chi2_statistics(sl, chain):
 
 def bayesian_information_criterion():
     pass
+
+def generate_sightlines_chain_statistics(sightline, chain, fname = "chain_stats", **kwargs):
+    acceptance_fraction = np.diff(chain, axis = 0)

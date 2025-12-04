@@ -3,7 +3,7 @@ import json
 import os
 
 import matplotlib.pyplot as plt
-""
+
 os.environ["OMP_NUM_THREADS"] = "1"
 import sys
 import logging
@@ -102,6 +102,8 @@ def pipeline(config):
                 sightlines[i], mcmc_config, dust, emission_CO, pool=pool, filename=mcmc_file
             , **mcmc_config)
 
+    metrics_out = {}
+
     for i in range(len(sightlines)):
 
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
@@ -114,19 +116,13 @@ def pipeline(config):
         fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
         plt.close()
 
-
-    metrics_out = {}
-    for i in range(len(sightlines)):
-
-        mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
-        reader = load_from_hdf5(mcmc_file)
-        chain = reader.get_chain()
         postprocessing_module = load_module("postprocessing")
         chi2_statistics = getattr(postprocessing_module, "chi2_statistics")
         per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sightlines[i], chain)
         logger.info("Sightline {} chi2 ".format(i), str(sightline_chi2))
         metrics_out["sl_{}".format(i)] = {"sightline_chi2": sightline_chi2, "median_chi2": median_star_chi2,
                                             "std_chi2": std_star_chi2, "perstar_chi2": list(per_star_chi2)}
+        
     with open(program_directory + "/sightline_outputs/sightline_metrics.json", mode = "a") as f:
         json.dump(metrics_out, f, indent = 2)
 
@@ -136,7 +132,6 @@ def pipeline(config):
     for i in range(len(sightlines)):
 
         sl = sightlines[i]
-        # sl = sightlines[i]
 
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
@@ -146,14 +141,6 @@ def pipeline(config):
         fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sl)
         fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
-
-        # fig, ax = plot_velo_dist_busy(reader, sightlines[i], dust = dust, emission = emission_CO, avprior = None, metrics = per_star_chi2)
-        # fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i))
-
-
-        # fig, ax, dist_xx, med_velo, std_velo = plot_velo(chain, sightlines[i])
-        # fig.savefig(program_directory + "/figures/veloposterior_sl_{i}.jpg".format(i=i))
-        # plt.close()      
 
     logger.info("Successfully ran through cloudKT.pipeline!")
 

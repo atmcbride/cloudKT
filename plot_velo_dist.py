@@ -6,23 +6,18 @@ from scipy.signal import correlate, correlation_lags
 from mcmc_functions import Logprior_Average_Extinction
 import json
 
+def sample_from_chain(chain, burnin = 200, thin = 20):
+    return chain[burnin::thin, :, :].reshape(-1, chain.shape[-1])
 
 def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None, plot_lines = False, plot_box = False, plot_violin = True, bestprob = False, lnprob = None):
-    samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
+    # samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
     if plot_objs == None:
         fig, ax = plt.subplots(figsize = (8,6))
     else:
         fig, ax = plot_objs
-    ndim = len(sl.voxel_dAVdd)
+    ndim = sl.ndim 
 
-    walker_max = chain.shape[0]
-
-    if min_walker is None:
-        min_walker = -100
-    # else:
-    min_walker_val = walker_max - min_walker
-
-    # samples = chain[min_walker_val:, :, :].reshape((-1, chain.shape[-1]))
+    samples = sample_from_chain(chain)
 
     vel_samples = samples[:, :sl.ndim]
     avg_av = np.nansum(np.median(sl.dAVdd, axis = 0))
@@ -35,18 +30,18 @@ def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None
 
         best_vals = chain[w_ind, stp_ind, :]
 
-    stdevs = np.nanstd(samples[min_walker_val:, :], ddof = 1, axis = 0)
+    stdevs = np.nanstd(samples[:, :], ddof = 1, axis = 0)
 
     med_velo = medians[:ndim]
     std_velo = stdevs[:ndim]
 
 
     med_dAV_dd = medians[ndim:]
-    std_dAV_dd = stdevs[ndim:] #CAUGHT 04.01 THIS WAS ASSIGNED TO med_dAV_dd
+    std_dAV_dd = stdevs[ndim:] 
 
-    perc16, perc50,  perc84 = (np.percentile(samples[min_walker_val:, :], 16, axis = 0), 
-                               np.percentile(samples[min_walker_val:, :], 50, axis = 0),
-                               np.percentile(samples[min_walker_val:, :], 84, axis = 0) )
+    perc16, perc50,  perc84 = (np.percentile(samples[:, :], 16, axis = 0), 
+                               np.percentile(samples[:, :], 50, axis = 0),
+                               np.percentile(samples[:, :], 84, axis = 0) )
     velo16, velo50, velo84 = (perc16[:ndim], perc50[:ndim], perc84[:ndim])
 
    
