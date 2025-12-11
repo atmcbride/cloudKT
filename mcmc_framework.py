@@ -9,6 +9,17 @@ from utilities import load_module
 
 logger = logging.getLogger(__name__)
 
+def build_moves(mcmc_config):
+    if "MOVES" not in mcmc_config.keys():
+        logger.info("No moves specified; defaulting to StretchMove")
+        return [(emcee.moves.StretchMove(), 1.0)]
+    moves_list = mcmc_config["moves"]
+    moves = []
+    for move_name in moves_list:
+        None
+
+
+
 def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool = None, filename = None, init_vabs = 15, **kwargs):
     """"
     Run the MCMC
@@ -33,7 +44,15 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
     ll_fn = getattr(ll_module, ll_config["FUNCTION"])
     ll_params = ll_config["PARAMETERS"]
     log_likelihood = (ll_fn, ll_params) # Pass as tuple (fn, fn_kwargs)
+
+    if "proposal_size" in mcmc_config.keys():
+        proposal_size = mcmc_config['proposal_size']
+        logger.info('Proposal size specified' + str(proposal_size))
+    else:
+        proposal_size = 2
     
+    # add a function for specifying moves in the config files! but for now this is fine
+    moves = [(emcee.moves.StretchMove(a=proposal_size), 1.0)]
 
     log_priors = []
     lp_config = mcmc_config["LOG_PRIOR"]
@@ -54,7 +73,8 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
 
 
     sampler = emcee.EnsembleSampler(nwalkers, ndim_amp, log_probability, pool = pool, backend = backend, kwargs = {
-                                    'sightline': sightline, 'log_likelihood': log_likelihood, 'log_priors': log_priors})
+                                    'sightline': sightline, 'log_likelihood': log_likelihood, 'log_priors': log_priors},
+                                    moves = moves)
 
     # init = 10 *  (np.random.random((nwalkers, ndim_amp)) - 0.5)
 
