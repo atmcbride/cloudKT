@@ -65,7 +65,7 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
 
     init[:, ndim:] = np.abs(sightline.dAVdd.ravel()[np.newaxis, :] + 0.1*(np.random.random(init[:, ndim:].shape)-0.5))
     # init[:, ndim:][(init[:, ndim:] <= 0.1)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.1))
-    init[:, ndim:][(init[:, ndim:] <= 0.0)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.0))
+    # init[:, ndim:][(init[:, ndim:] <= 0.0)] = 0.11 + 0.05 * np.random.random(np.sum(init[:, ndim:]<= 0.0))
 
 
     print('NDIM:', ndim, 'NSTAR:', nstar, 'INITSHAPE:', init.shape)

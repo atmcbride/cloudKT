@@ -1,8 +1,11 @@
 import numpy as np 
 
+def sample_from_chain(chain, burnin = 200, thin = 20):
+    return chain[burnin::thin, :, :].reshape(-1, chain.shape[-1])
 
 def chi2_statistics(sl, chain):
-    samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
+    # samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
+    samples = sample_from_chain(chain)
     v = np.nanmedian(samples[:, :sl.ndim], axis = 0)
     davdd = np.nanmedian(samples[:, sl.ndim:], axis = 0).reshape(-1, sl.ndim)
 
@@ -23,4 +26,6 @@ def bayesian_information_criterion():
     pass
 
 def generate_sightlines_chain_statistics(sightline, chain, fname = "chain_stats", **kwargs):
-    acceptance_fraction = np.diff(chain, axis = 0)
+    samples = sample_from_chain(chain)
+    acceptance_fraction = np.sum(np.diff(chain, axis = 0) == 0, axis = 0) / chain.shape[0]
+
