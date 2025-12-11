@@ -13,10 +13,23 @@ def build_moves(mcmc_config):
     if "MOVES" not in mcmc_config.keys():
         logger.info("No moves specified; defaulting to StretchMove")
         return [(emcee.moves.StretchMove(), 1.0)]
-    moves_list = mcmc_config["moves"]
+    move_names_list = mcmc_config["MOVES"]
+    move_args_list = mcmc_config['MOVES_ARGS']
+    move_kwargs_list = mcmc_config["MOVES_KWARGS"]
+    move_probs_list = mcmc_config["MOVES_PROBS"]
+
     moves = []
-    for move_name in moves_list:
-        None
+    for i in range(len(move_names_list)):
+        move_name = move_names_list[i]
+        move_args = tuple(move_args_list[i])
+        move_kwargs = move_kwargs_list[i]
+        move_prob = move_probs_list[i]
+
+        move = getattr(emcee.moves, move_name)
+        moves.append((move(*move_args, **move_kwargs), move_prob))
+
+    logger.info("Custom moves built: " + str(move_names_list))
+    return moves
 
 
 
@@ -45,14 +58,16 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
     ll_params = ll_config["PARAMETERS"]
     log_likelihood = (ll_fn, ll_params) # Pass as tuple (fn, fn_kwargs)
 
-    if "proposal_size" in mcmc_config.keys():
-        proposal_size = mcmc_config['proposal_size']
-        logger.info('Proposal size specified' + str(proposal_size))
-    else:
-        proposal_size = 2
+    # if "proposal_size" in mcmc_config.keys():
+    #     proposal_size = mcmc_config['proposal_size']
+    #     logger.info('Proposal size specified' + str(proposal_size))
+    # else:
+    #     proposal_size = 2
     
     # add a function for specifying moves in the config files! but for now this is fine
-    moves = [(emcee.moves.StretchMove(a=proposal_size), 1.0)]
+    # moves = [(emcee.moves.StretchMove(a=proposal_size), 1.0)]
+
+    moves = build_moves(mcmc_config)
 
     log_priors = []
     lp_config = mcmc_config["LOG_PRIOR"]
