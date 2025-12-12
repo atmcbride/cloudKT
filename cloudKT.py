@@ -104,7 +104,7 @@ def pipeline(config):
             , **mcmc_config)
 
             try:
-                autocorrelation_time = np.nanmedian(sampler.get_autocorr_time(discard = 200, thin = 20, quiet = True))
+                autocorrelation_time = np.nanmedian(sampler.get_autocorr_time(discard = 200, quiet = True))
             except:
                 autocorrelation_time = 0
 
