@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import numpy as np
 
 import matplotlib.pyplot as plt
 
@@ -101,6 +102,13 @@ def pipeline(config):
             sampler = run_mcmc(
                 sightlines[i], mcmc_config, dust, emission_CO, pool=pool, filename=mcmc_file
             , **mcmc_config)
+
+            try:
+                autocorrelation_time = np.nanmedian(sampler.get_autocorr_time(discard = 200, thin = 20, quiet = True))
+            except:
+                autocorrelation_time = 0
+
+            logger.info("Sightline {i} median autocorr time: {ac}".format(i = i, ac = autocorrelation_time))
 
     metrics_out = {}
 

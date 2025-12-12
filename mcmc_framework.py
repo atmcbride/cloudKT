@@ -105,13 +105,22 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
 
     print('NDIM:', ndim, 'NSTAR:', nstar, 'INITSHAPE:', init.shape)
 
-    sampler.run_mcmc(init, steps, progress = False, store = True);
+    # sampler.run_mcmc(init, steps, progress = False, store = True);
+
+    if backend_thin not in mcmc_config.keys():
+        backend_thin = 1
+    else:
+        backend_thin = mcmc_config['BACKEND_THIN']
+
+    for sample in sampler.sample(init, iterations=steps, progress=True):
+        if sampler.iteration % backend_thin == 0:
+            backend.save_step(sampler)  # this is handled automatically in backend
 
     return sampler
 
 def run_mcmc_smaller(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool = None, filename = None, **kwargs):
-    """"
-    Run the MCMC
+    """
+    Run the MCMC (this version, not implemented, cuts down on some of the variables)
     """
     ndim = len(sightline.voxel_dAVdd) 
     nstar = len(sightline.stars)
