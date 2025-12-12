@@ -107,14 +107,18 @@ def run_mcmc(sightline, mcmc_config, *args, steps = 1000, nwalkers = 100, pool =
 
     # sampler.run_mcmc(init, steps, progress = False, store = True);
 
-    if backend_thin not in mcmc_config.keys():
+    if "BACKEND_THIN" not in mcmc_config.keys():
         backend_thin = 1
     else:
         backend_thin = mcmc_config['BACKEND_THIN']
+    
+    sampler.run_mcmc(init, steps, progress = True, thin_by = backend_thin, store = True);
 
-    for sample in sampler.sample(init, iterations=steps, progress=True):
-        if sampler.iteration % backend_thin == 0:
-            backend.save_step(sampler)  # this is handled automatically in backend
+
+    # for sample in sampler.sample(init, iterations=steps, thin_by = backend_thin, progress=True, store= True):
+    #     pass
+        # if sampler.iteration % backend_thin == 0:
+        #     backend.save_step(sampler)  # this is handled automatically in backend
 
     return sampler
 
