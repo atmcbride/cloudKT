@@ -31,6 +31,7 @@ from plot_velo_dist import plot_velo_dist, plot_velo_dist_busy
 from plotting.plot_velo import plot_velo
 from mcmc_framework import load_from_hdf5
 
+
 def main():
     # Parse the command line arguments
     global args
@@ -64,28 +65,38 @@ def pipeline(config):
 
     # load the sightline module
     logger.info("--- Loading sightline module ---")
-    sightline_setup_module = load_module(config['SIGHTLINE_SETUP']['MODULE'])
-    sightline_setup = getattr(sightline_setup_module, config['SIGHTLINE_SETUP']['FUNCTION'])
+    sightline_setup_module = load_module(config["SIGHTLINE_SETUP"]["MODULE"])
+    sightline_setup = getattr(
+        sightline_setup_module, config["SIGHTLINE_SETUP"]["FUNCTION"]
+    )
     uses_foreground = False
-    if "foreground" in config['SIGHTLINE_SETUP']['MODULE']:
+    if "foreground" in config["SIGHTLINE_SETUP"]["MODULE"]:
         uses_foreground = True
-    sightline_setup_config = config['SIGHTLINE_SETUP']['PARAMETERS']
-
+    sightline_setup_config = config["SIGHTLINE_SETUP"]["PARAMETERS"]
 
     sightline_setup_config["POPULATE_FROM_FILES"] = args.populate_from_files == "true"
-    if args.populate_from_files=="true":
+    if args.populate_from_files == "true":
         sightline_setup_config["STARS_TO_FILES"] = False
     else:
         sightline_setup_config["STARS_TO_FILES"] = args.stars_to_files == "true"
 
-    sightlines = sightline_setup(stars, dust, emission_CO, emission_HI, sightline_setup_config, program_directory = program_directory)
-        
+    sightlines = sightline_setup(
+        stars,
+        dust,
+        emission_CO,
+        emission_HI,
+        sightline_setup_config,
+        program_directory=program_directory,
+    )
+
     for i in range(len(sightlines)):
         if args.stars_to_files == "true":
             if not os.path.exists(program_directory + "/sightline_outputs/"):
                 os.mkdir(program_directory + "/sightline_outputs/")
-            sightlines[i].stars.write(program_directory + "/sightline_outputs/stars_{}.fits".format(i), overwrite = True)
-
+            sightlines[i].stars.write(
+                program_directory + "/sightline_outputs/stars_{}.fits".format(i),
+                overwrite=True,
+            )
 
     logger.info("--- Running Model ---")
     logger.info("Starting MCMC Setup...")
@@ -96,19 +107,35 @@ def pipeline(config):
     if args.run_MCMC == "true":
         for i in range(len(sightlines)):
             logger.info("Running MCMC for sightline {}...".format(i))
-            mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
+            mcmc_file = (
+                program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
+            )
             pool = Pool(12)
             logger.info("Running MCMC...")
             sampler = run_mcmc(
-                sightlines[i], mcmc_config, dust, emission_CO, pool=pool, filename=mcmc_file
-            , **mcmc_config)
+                sightlines[i],
+                mcmc_config,
+                dust,
+                emission_CO,
+                pool=pool,
+                filename=mcmc_file,
+                resume_mcmc=args.resume_mcmc,
+                skip_existing=args.skip_existing_mcmc,
+                **mcmc_config
+            )
 
             try:
-                autocorrelation_time = np.nanmedian(sampler.get_autocorr_time(discard = 200, quiet = True))
+                autocorrelation_time = np.nanmedian(
+                    sampler.get_autocorr_time(discard=200, quiet=True)
+                )
             except:
                 autocorrelation_time = 0
 
-            logger.info("Sightline {i} median autocorr time: {ac}".format(i = i, ac = autocorrelation_time))
+            logger.info(
+                "Sightline {i} median autocorr time: {ac}".format(
+                    i=i, ac=autocorrelation_time
+                )
+            )
 
     metrics_out = {}
 
@@ -118,25 +145,38 @@ def pipeline(config):
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
 
-        plot_signals = plot_signals_sample_fg if uses_foreground else plot_signals_sample
+        plot_signals = (
+            plot_signals_sample_fg if uses_foreground else plot_signals_sample
+        )
         fig, ax = plot_signals(reader, sightlines[i])
 
-        fig.savefig(program_directory + '/figures/signals_sl_{i}.jpg'.format(i=i))
+        fig.savefig(program_directory + "/figures/signals_sl_{i}.jpg".format(i=i))
         plt.close()
 
         postprocessing_module = load_module("postprocessing")
         chi2_statistics = getattr(postprocessing_module, "chi2_statistics")
-        per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sightlines[i], chain)
+        (
+            per_star_chi2,
+            median_star_chi2,
+            std_star_chi2,
+            sightline_chi2,
+        ) = chi2_statistics(sightlines[i], chain)
         logger.info("Sightline {} chi2 ".format(i), str(sightline_chi2))
-        metrics_out["sl_{}".format(i)] = {"sightline_chi2": sightline_chi2, "median_chi2": median_star_chi2,
-                                            "std_chi2": std_star_chi2, "perstar_chi2": list(per_star_chi2)}
-        
-    with open(program_directory + "/sightline_outputs/sightline_metrics.json", mode = "a") as f:
-        json.dump(metrics_out, f, indent = 2)
+        metrics_out["sl_{}".format(i)] = {
+            "sightline_chi2": sightline_chi2,
+            "median_chi2": median_star_chi2,
+            "std_chi2": std_star_chi2,
+            "perstar_chi2": list(per_star_chi2),
+        }
+
+    with open(
+        program_directory + "/sightline_outputs/sightline_metrics.json", mode="a"
+    ) as f:
+        json.dump(metrics_out, f, indent=2)
 
     if not os.path.exists(program_directory + "/figures/"):
         os.mkdir(program_directory + "/figures/")
-    
+
     for i in range(len(sightlines)):
 
         sl = sightlines[i]
@@ -144,13 +184,19 @@ def pipeline(config):
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
         chain = reader.get_chain()
-        per_star_chi2, median_star_chi2, std_star_chi2, sightline_chi2 = chi2_statistics(sl, chain)
+        (
+            per_star_chi2,
+            median_star_chi2,
+            std_star_chi2,
+            sightline_chi2,
+        ) = chi2_statistics(sl, chain)
 
         fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sl)
         fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
 
     logger.info("Successfully ran through cloudKT.pipeline!")
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="nanoKT_v2")
@@ -162,12 +208,44 @@ def parse_args():
     parser.add_argument(
         "--default", type=str, help="Default configuration file", default="DEFAULTS"
     )
-    parser.add_argument("--run_pipeline", type=str, help= "Run pipeline", default="true")
-    parser.add_argument("--stars_to_files", type = str, help = 'Save sightline input stars to .fits files', default = 'true')
-    parser.add_argument("--populate_from_files", type = str, help = 'Populate sightlines from previously-saved .fits files', default = 'false')
-    parser.add_argument("--run_MCMC", type=str, help = "Run MCMC? Otherwise, load chains from a previous run", default = "true")
-    parser.add_argument("--make_plots", type=str, help = "Make plots using specified plotting functions", default = "true")
-    parser.add_argument("--init_comment", type = str, help = "Initial message to describe run", default = "")
+    parser.add_argument("--run_pipeline", type=str, help="Run pipeline", default="true")
+    parser.add_argument(
+        "--stars_to_files",
+        type=str,
+        help="Save sightline input stars to .fits files",
+        default="true",
+    )
+    parser.add_argument(
+        "--populate_from_files",
+        type=str,
+        help="Populate sightlines from previously-saved .fits files",
+        default="false",
+    )
+    parser.add_argument(
+        "--run_MCMC",
+        type=str,
+        help="Run MCMC? Otherwise, load chains from a previous run",
+        default="true",
+    )
+    parser.add_argument(
+        "--make_plots",
+        type=str,
+        help="Make plots using specified plotting functions",
+        default="true",
+    )
+    parser.add_argument(
+        "--init_comment", type=str, help="Initial message to describe run", default=""
+    )
+    parser.add_argument(
+        "--skip_existing_mcmc",
+        action="store_true",
+        help="ignores existing MCMC files, if they exist",
+    )
+    parser.add_argument(
+        "--resume_mcmc",
+        action="store_true",
+        help="resumes MCMC traininng from previous runs, if they exist",
+    )
     return parser.parse_args()
 
 
