@@ -63,8 +63,14 @@ def run_mcmc(
         if os.path.exists(filename) & skip_existing:
             skip_running = True
         backend = emcee.backends.HDFBackend(filename)
-        if not resume_mcmc:
-            backend.reset(nwalkers, ndim_amp)
+
+        # backend_shape = backend.shape
+        # print(backend_shape)
+
+        if backend.shape[0] != steps:
+            logger.info("Previous model run was not run to the correct number of steps.")
+            skip_running = False # in the future add code for resuming with x number steps
+        
     else:
         backend = None
         logger.warning("NO BACKEND")
@@ -143,6 +149,9 @@ def run_mcmc(
 
     if skip_running:
         return sampler
+    
+    if not resume_mcmc:
+        backend.reset(nwalkers, ndim_amp) #oops 
 
     sampler.run_mcmc(init, steps, progress=False, thin_by=backend_thin, store=True)
 
