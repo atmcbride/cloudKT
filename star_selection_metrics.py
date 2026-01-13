@@ -62,7 +62,7 @@ def select_on_EW(tab, vector = (0.05, 0.05), select_first = None, norm_vals = No
     return selection 
 
 
-def select_on_emission(tab, emission = None, threshold = 0.03, ref_point = (167.4, -8.3), **kwargs):
+def select_on_emission(tab, emission = None, threshold = 0.03, ref_point = (167.4, -8.3),return_grid = False, **kwargs):
     b_em, l_em = emission.world[0, :, :][1:]
     b_em, l_em = b_em[:, 0], l_em[0, :]
     em_i, em_j = np.argmin(np.abs(l_em.value - ref_point[0])), np.argmin(np.abs(b_em.value - ref_point[1]))
@@ -80,8 +80,13 @@ def select_on_emission(tab, emission = None, threshold = 0.03, ref_point = (167.
     
     stars_CO_correlation = correlation_image[em_star_indices[:, 0], em_star_indices[:, 1]]
 
+    
+
     star_selection = stars_CO_correlation > threshold
-    return star_selection
+    if not return_grid:
+        return star_selection
+    else: 
+        return star_selection, correlation_image > threshold
 
 def select_stars(self, tab, **kwargs):
     tab = tab[select_on_emission(tab,  **kwargs)]

@@ -61,15 +61,19 @@ def run_mcmc(
     skip_running = False
     if filename is not None:
         if os.path.exists(filename) & skip_existing:
+            logger.info("A file currently exists for this run. Skip existing: " + str(skip_existing))
             skip_running = True
         backend = emcee.backends.HDFBackend(filename)
+
+        if skip_running:
+            if backend.iteration != steps:
+                logger.info("Previous model run was not to the correct number of steps. Has {existing}, needs {needed}.".format(existing=backend.iteration, needed=steps))
+                logger.info("Will re-run this model.")
+                skip_running = False # in the future add code for resuming with x number steps
 
         # backend_shape = backend.shape
         # print(backend_shape)
 
-        if backend.shape[0] != steps:
-            logger.info("Previous model run was not run to the correct number of steps.")
-            skip_running = False # in the future add code for resuming with x number steps
         
     else:
         backend = None
@@ -284,6 +288,4 @@ def evaluate_log_prior(theta, log_priors=None, sightline=None, **kwargs):
 
 def load_from_hdf5(h5_fname):
     reader = emcee.backends.HDFBackend(h5_fname)
-    chain = reader.get_chain()
-    prob = reader.get_log_prob()
     return reader

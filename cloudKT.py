@@ -195,6 +195,11 @@ def pipeline(config):
         fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
 
+        
+        fig, ax = plot_velo_dist_busy(chain, sl, emission_CO, dust)
+        fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i))
+        plt.close()
+
     logger.info("Successfully ran through cloudKT.pipeline!")
 
 

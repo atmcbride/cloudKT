@@ -160,22 +160,96 @@ def get_typical_emission_profile(emission):
     return np.nanmedian(emission_filament, axis = (1,2))
 
 
-def plot_velo_dist_busy(reader, sl, emission = None, dust = None, avprior = None, metrics = None):
-    chain = reader.get_chain()
-    logprob = reader.get_log_prob()
+# def plot_velo_dist_busy(reader, sl, emission = None, dust = None, avprior = None, metrics = None):
+#     chain = reader.get_chain()
+#     logprob = reader.get_log_prob()
 
 
-    fig, ax = plt.subplots(figsize = (10, 10))
-    fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax), lnprob = logprob, bestprob= True)
+#     fig, ax = plt.subplots(figsize = (10, 10))
+#     fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax), lnprob = logprob, bestprob= True)
+
+#     aux1 = ax.inset_axes([0, -0.1, 1, 0.1])
+#     aux2 = ax.inset_axes([0, 1, 1, 0.4])
+#     aux3 = ax.inset_axes([1, 0, 0.1, 1])
+
+#     samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
+#     ndim = len(sl.voxel_dAVdd)
+#     walker_max = chain.shape[0]
+#     min_walker = -100
+#     vel_samples = samples[:, :sl.ndim]
+#     avg_av = np.nansum(np.median(sl.dAVdd, axis = 0))
+
+#     medians = np.nanmedian(samples[:, :], axis = 0)
+#     stdevs = np.nanstd(samples[:, :], ddof = 1, axis = 0)
+
+#     med_velo = medians[:ndim]
+#     std_velo = stdevs[:ndim]
+
+
+#     med_dAV_dd = medians[ndim:].reshape(-1, sl.ndim)
+#     std_dAV_dd = stdevs[ndim:].reshape(-1, sl.ndim) #CAUGHT 04.01 THIS WAS ASSIGNED TO med_dAV_dd
+#     mask = sl.dAVdd_mask
+#     med_dAVdd_masked = np.copy(med_dAV_dd)
+#     med_dAVdd_masked[mask] = np.nan
+
+#     if avprior == None:
+#         avprior = Logprior_Average_Extinction(sl, dust, emission, )
+#         prior_av = avprior.avg_dAVdd
+
+#     if metrics is not None:
+#         inds = np.digitize(sl.stars['DIST'], sl.bins) 
+#         aux1.hlines(metrics, sl.bins[inds -1], sl.bins[inds])
+#         aux1.set_xlabel('Distance (pc)')
+#         aux1.set_ylabel(r"$\chi^2$")
+
+#     if True: 
+#         best_step, best_walker = np.unravel_index(np.argmax(logprob), logprob.shape)
+#         vbest = chain[best_step, best_walker, :sl.ndim]
+#         # davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
+
+
+#     aux2.hlines(prior_av, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = "solid", label = "Avg prior")
+#     aux2.hlines(sl.voxel_dAVdd, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = 'dotted', label = "Mean")
+#     # aux2.hlines(med_dAV_dd, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = "dotted", label = "Mean")
+
+#     for i in range(len(sl.stars)):
+#         aux2.hlines(med_dAVdd_masked[i, :], sl.bins[:-1], sl.bins[1:], color = "C{}".format(i))
+#     aux2.set_ylabel(r'$\delta A_V$')
+    
+#     vhelio_em = transform_spectral_axis2(emission)
+#     typical_emission = get_typical_emission_profile(emission)
+#     aux3.plot(typical_emission, vhelio_em, linestyle = "dashed")
+#     aux3.set_xlabel('Intensity \n (K km/s)')
+    
+#     aux1.set_xlim(ax.get_xlim())
+#     aux2.set_xlim(ax.get_xlim())
+#     aux3.set_ylim(ax.get_ylim())
+    
+
+    
+#     return fig, ax
+
+def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None, metrics = None, plot_objs = None):
+    if plot_objs == None:
+        fig, ax = plt.subplots(figsize = (8,6))
+    else:
+        fig, ax = plot_objs
+    ndim = sl.ndim 
+
+    samples = sample_from_chain(chain)
+
+    fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax), lnprob = None, bestprob= False)
 
     aux1 = ax.inset_axes([0, -0.1, 1, 0.1])
     aux2 = ax.inset_axes([0, 1, 1, 0.4])
     aux3 = ax.inset_axes([1, 0, 0.1, 1])
 
-    samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
     ndim = len(sl.voxel_dAVdd)
-    walker_max = chain.shape[0]
-    min_walker = -100
+    # walker_max = chain.shape[0]
+    # min_walker = -100
+    # vel_samples = samples[:, :sl.ndim]
+    # avg_av = np.nansum(np.median(sl.dAVdd, axis = 0))
+
     vel_samples = samples[:, :sl.ndim]
     avg_av = np.nansum(np.median(sl.dAVdd, axis = 0))
 
@@ -187,7 +261,7 @@ def plot_velo_dist_busy(reader, sl, emission = None, dust = None, avprior = None
 
 
     med_dAV_dd = medians[ndim:].reshape(-1, sl.ndim)
-    std_dAV_dd = stdevs[ndim:].reshape(-1, sl.ndim) #CAUGHT 04.01 THIS WAS ASSIGNED TO med_dAV_dd
+    std_dAV_dd = stdevs[ndim:].reshape(-1, sl.ndim)
     mask = sl.dAVdd_mask
     med_dAVdd_masked = np.copy(med_dAV_dd)
     med_dAVdd_masked[mask] = np.nan
@@ -202,10 +276,10 @@ def plot_velo_dist_busy(reader, sl, emission = None, dust = None, avprior = None
         aux1.set_xlabel('Distance (pc)')
         aux1.set_ylabel(r"$\chi^2$")
 
-    if True: 
-        best_step, best_walker = np.unravel_index(np.argmax(logprob), logprob.shape)
-        vbest = chain[best_step, best_walker, :sl.ndim]
-        # davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
+    # if True: 
+    #     best_step, best_walker = np.unravel_index(np.argmax(logprob), logprob.shape)
+    #     vbest = chain[best_step, best_walker, :sl.ndim]
+    #     # davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
 
 
     aux2.hlines(prior_av, sl.bins[:-1], sl.bins[1:], color = 'k', linestyles = "solid", label = "Avg prior")
