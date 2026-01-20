@@ -143,7 +143,7 @@ def pipeline(config):
 
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
-        chain = reader.get_chain()
+        # chain = reader.get_chain()
 
         plot_signals = (
             plot_signals_sample_fg if uses_foreground else plot_signals_sample
@@ -154,25 +154,25 @@ def pipeline(config):
         plt.close()
 
         postprocessing_module = load_module("postprocessing")
-        chi2_statistics = getattr(postprocessing_module, "chi2_statistics")
-        (
-            per_star_chi2,
-            median_star_chi2,
-            std_star_chi2,
-            sightline_chi2,
-        ) = chi2_statistics(sightlines[i], chain)
-        logger.info("Sightline {} chi2 ".format(i), str(sightline_chi2))
-        metrics_out["sl_{}".format(i)] = {
-            "sightline_chi2": sightline_chi2,
-            "median_chi2": median_star_chi2,
-            "std_chi2": std_star_chi2,
-            "perstar_chi2": list(per_star_chi2),
-        }
+        # chi2_statistics = getattr(postprocessing_module, "chi2_statistics")
+        # (
+        #     per_star_chi2,
+        #     median_star_chi2,
+        #     std_star_chi2,
+        #     sightline_chi2,
+        # ) = chi2_statistics(sightlines[i], chain)
+        # logger.info("Sightline {} chi2 ".format(i), str(sightline_chi2))
+        # metrics_out["sl_{}".format(i)] = {
+        #     "sightline_chi2": sightline_chi2,
+        #     "median_chi2": median_star_chi2,
+        #     "std_chi2": std_star_chi2,
+        #     "perstar_chi2": list(per_star_chi2),
+        # }
 
-    with open(
-        program_directory + "/sightline_outputs/sightline_metrics.json", mode="a"
-    ) as f:
-        json.dump(metrics_out, f, indent=2)
+    # with open(
+    #     program_directory + "/sightline_outputs/sightline_metrics.json", mode="a"
+    # ) as f:
+    #     json.dump(metrics_out, f, indent=2)
 
     if not os.path.exists(program_directory + "/figures/"):
         os.mkdir(program_directory + "/figures/")
@@ -183,21 +183,25 @@ def pipeline(config):
 
         mcmc_file = program_directory + "/sightline_outputs/mcmc_output_{}.h5".format(i)
         reader = load_from_hdf5(mcmc_file)
-        chain = reader.get_chain()
-        (
-            per_star_chi2,
-            median_star_chi2,
-            std_star_chi2,
-            sightline_chi2,
-        ) = chi2_statistics(sl, chain)
+        # chain = reader.get_chain()
+        # (
+        #     per_star_chi2,
+        #     median_star_chi2,
+        #     std_star_chi2,
+        #     sightline_chi2,
+        # ) = chi2_statistics(sl, chain)
 
-        fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(chain, sl)
+        fig, ax, dist_xx, med_velo, std_velo = plot_velo_dist(reader, sl)
         fig.savefig(program_directory + "/figures/velodist_sl_{i}.jpg".format(i=i))
         plt.close()
 
-        
-        fig, ax = plot_velo_dist_busy(chain, sl, emission_CO, dust)
-        fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i))
+
+        fig, ax = plot_velo_dist_busy(reader, sl, emission_CO, dust)
+        bbox_artists = [
+            artist for artist in fig.get_children()
+            if hasattr(artist, "get_window_extent")
+            ]
+        fig.savefig(program_directory + "/figures/velodist_busy_sl_{i}.jpg".format(i=i), bbox_extra_artists=bbox_artists)
         plt.close()
 
     logger.info("Successfully ran through cloudKT.pipeline!")

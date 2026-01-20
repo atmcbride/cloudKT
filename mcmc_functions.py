@@ -217,6 +217,8 @@ class Logprior_Average_Extinction:
         avg_dust_profile = np.nanmedian(dust_profiles, axis = 0)
         # avg_dust_profile[dust.distance < 400] = 0
         std_dust_profile = np.nanstd(dust_profiles, axis = 0, ddof = 1)
+        self.avg_dust_profile = avg_dust_profile
+        self.std_dust_profile = std_dust_profile
 
         distance = dust.distance
         n_bins = len(sightline.bins) - 1

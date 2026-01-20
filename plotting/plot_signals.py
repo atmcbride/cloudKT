@@ -1,13 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import h5py
+import matplotlib
+
+matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams['font.size'] = 30
 
 def sample_from_chain(chain, burnin = 200, thin = 20):
     return chain[burnin::thin, :, :].reshape(-1, chain.shape[-1])
 
+def sample_from_reader(reader, burnin = 200, thin = 20, n_samples = None):
+    if n_samples is not None:
+        thin = max(10, int((reader.iteration - burnin) / n_samples))
+    with h5py.File(reader.filename, mode = "r") as f:
+        samples = f["mcmc_chain"][burnin::thin, :, :].reshape(-1, f["mcmc_chain"].shape[-1])
+    return samples 
+
+import sys 
+sys.path.append("../cloudKT")
+from mcmc_framework import sample_from_reader
+
 
 def plot_signals_sample(reader, sl, logprob = None):
-    chain = reader.get_chain()
-    logprob = reader.get_log_prob()
+    # chain = reader.get_chain()
+    # logprob = reader.get_log_prob()
     # samples = chain[:, int(0.8 * chain.shape[1]), :]
 
     # v = np.nanmedian(samples[:, :sl.ndim], axis = 0)
@@ -19,7 +35,9 @@ def plot_signals_sample(reader, sl, logprob = None):
     #     v = chain[best_step, best_walker, :sl.ndim]
     #     davdd = chain[best_step, best_walker, sl.ndim:2*sl.ndim]
 
-    samples = sample_from_chain(chain)
+
+    samples = sample_from_reader(reader)
+    # samples = sample_from_chain(chain)
     v = np.nanmedian(samples, axis = 0)[:sl.ndim]
     davdd_all = np.nanmedian(samples, axis = 0)[sl.ndim:].reshape((sl.nsig, sl.ndim))
 
@@ -100,11 +118,13 @@ def model_signals_fg(rvelo, sl, dAVdd):
 
 
 def plot_signals_sample_fg(reader, sl, logprob = None):
-    chain = reader.get_chain()
-    logprob = reader.get_log_prob()
+    # chain = reader.get_chain()
+    # logprob = reader.get_log_prob()
 
-    print("based on shape issues this could break, check!")
-    samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
+    # print("based on shape issues this could break, check!")
+    # samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
+
+    samples = sample_from_reader(reader)
 
     wavs_window = sl.wavs_window
     v = np.nanmedian(samples[:, :sl.ndim], axis = 0)

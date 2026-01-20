@@ -4,6 +4,7 @@ import logging
 from functools import partial
 import os
 
+import h5py
 
 from utilities import load_module
 
@@ -155,7 +156,10 @@ def run_mcmc(
         return sampler
     
     if not resume_mcmc:
-        backend.reset(nwalkers, ndim_amp) #oops 
+        backend.reset(nwalkers, ndim_amp) 
+    else:#oops 
+        steps = steps - backend.iteration
+        logger.info("Resuming MCMC from previous run; will run " + str(steps) + " more steps.")
 
     sampler.run_mcmc(init, steps, progress=False, thin_by=backend_thin, store=True)
 
@@ -289,3 +293,8 @@ def evaluate_log_prior(theta, log_priors=None, sightline=None, **kwargs):
 def load_from_hdf5(h5_fname):
     reader = emcee.backends.HDFBackend(h5_fname)
     return reader
+
+def sample_from_reader(reader, burnin = 200, thin = 20, n_samples = None):
+    with h5py.File(reader.filename, mode = "r") as f:
+        samples = f["mcmc/chain"][burnin::thin, :, :].reshape(-1, f["mcmc/chain"].shape[-1])
+    return samples 

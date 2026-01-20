@@ -6,10 +6,14 @@ from scipy.signal import correlate, correlation_lags
 from mcmc_functions import Logprior_Average_Extinction
 import json
 
+import sys 
+sys.path.append("../cloudKT")
+from mcmc_framework import sample_from_reader
+
 def sample_from_chain(chain, burnin = 200, thin = 20):
     return chain[burnin::thin, :, :].reshape(-1, chain.shape[-1])
 
-def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None, plot_lines = False, plot_box = False, plot_violin = True, bestprob = False, lnprob = None):
+def plot_velo_dist(reader, sl , min_walker = None, plot_objs = None, color = None, plot_lines = False, plot_box = False, plot_violin = True, bestprob = False, lnprob = None):
     # samples = chain.swapaxes(0,1)[-100:, :, :].reshape(-1, chain.shape[-1])
     if plot_objs == None:
         fig, ax = plt.subplots(figsize = (8,6))
@@ -17,18 +21,13 @@ def plot_velo_dist(chain, sl , min_walker = None, plot_objs = None, color = None
         fig, ax = plot_objs
     ndim = sl.ndim 
 
-    samples = sample_from_chain(chain)
+    samples = sample_from_reader(reader)
 
     vel_samples = samples[:, :sl.ndim]
     avg_av = np.nansum(np.median(sl.dAVdd, axis = 0))
 
     medians = np.nanmedian(samples[:, :], axis = 0)
-    if bestprob:
-        lp = lnprob.T
-        lp[:, :-100] = -np.infty
-        w_ind, stp_ind = np.unravel_index(np.argmax(lp), lp.shape)
 
-        best_vals = chain[w_ind, stp_ind, :]
 
     stdevs = np.nanstd(samples[:, :], ddof = 1, axis = 0)
 
@@ -160,6 +159,9 @@ def get_typical_emission_profile(emission):
     return np.nanmedian(emission_filament, axis = (1,2))
 
 
+
+
+
 # def plot_velo_dist_busy(reader, sl, emission = None, dust = None, avprior = None, metrics = None):
 #     chain = reader.get_chain()
 #     logprob = reader.get_log_prob()
@@ -229,16 +231,17 @@ def get_typical_emission_profile(emission):
     
 #     return fig, ax
 
-def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None, metrics = None, plot_objs = None):
+def plot_velo_dist_busy(reader, sl, emission = None, dust = None, avprior = None, metrics = None, plot_objs = None):
     if plot_objs == None:
         fig, ax = plt.subplots(figsize = (8,6))
     else:
         fig, ax = plot_objs
     ndim = sl.ndim 
 
-    samples = sample_from_chain(chain)
+    # samples = sample_from_chain(chain)
+    samples = sample_from_reader(reader)
 
-    fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(chain, sl, plot_objs = (fig, ax), lnprob = None, bestprob= False)
+    fig, ax, dist_xx, med_velo, std_velo  = plot_velo_dist(reader, sl, plot_objs = (fig, ax), lnprob = None, bestprob= False)
 
     aux1 = ax.inset_axes([0, -0.1, 1, 0.1])
     aux2 = ax.inset_axes([0, 1, 1, 0.4])
@@ -293,12 +296,15 @@ def plot_velo_dist_busy(chain, sl, emission = None, dust = None, avprior = None,
     vhelio_em = transform_spectral_axis2(emission)
     typical_emission = get_typical_emission_profile(emission)
     aux3.plot(typical_emission, vhelio_em, linestyle = "dashed")
-    aux3.set_xlabel('Intensity \n (K km/s)')
+    aux3.set_xlabel('Intensity \n (K km/s)', rotation = 270, labelpad = 20)
     
     aux1.set_xlim(ax.get_xlim())
     aux2.set_xlim(ax.get_xlim())
     aux3.set_ylim(ax.get_ylim())
-    
-
+    aux2.set_xticklabels([])
+    aux3.set_yticklabels([])
+    aux1.plot(dust.distance, avprior.avg_dust_profile, color = 'k', linestyle = "dashed", label = "Average Extinction Profile")
+    aux1.set_xticks(np.arange(350, 601, 50))
+    aux1.set_xlabel('Distance (pc)')
     
     return fig, ax
