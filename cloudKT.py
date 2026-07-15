@@ -150,7 +150,12 @@ def pipeline(config):
         )
         fig, ax = plot_signals(reader, sightlines[i])
 
-        fig.savefig(program_directory + "/figures/signals_sl_{i}.jpg".format(i=i))
+        bbox_artists = [
+            artist for artist in fig.get_children()
+            if hasattr(artist, "get_window_extent")
+            ]
+
+        fig.savefig(program_directory + "/figures/signals_sl_{i}.jpg".format(i=i), bbox_extra_artists=bbox_artists, pad_inches = 1.5)
         plt.close()
 
         postprocessing_module = load_module("postprocessing")

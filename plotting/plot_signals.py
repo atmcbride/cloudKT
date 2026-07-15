@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 import matplotlib
+from sklearn.preprocessing import scale
 
-matplotlib.rcParams['font.family'] = 'serif'
-matplotlib.rcParams['font.size'] = 30
+matplotlib.rcParams.update({'font.family':'serif', 'font.size':30})
 
 def sample_from_chain(chain, burnin = 200, thin = 20):
     return chain[burnin::thin, :, :].reshape(-1, chain.shape[-1])
@@ -61,13 +61,27 @@ def plot_signals_sample(reader, sl, logprob = None):
         # ax.plot(wavs_window, sl.signals[ii, :] + 0.05 * i, color = 'C{}'.format(i))
         # ax.fill_between(wavs_window, sl.signals[ii, :] + sl.signal_errs[ii, :] + 0.05 * i,
         #                  sl.signals[ii, :] - sl.signal_errs[ii, :] + 0.05 * i, color = 'C{}'.format(bindex), alpha = 0.1)
+        scale = 1.5
+        ax.plot(wavs_window, scale * (model_signals[ii, :]-1 ) + 1 + 0.1 * i, color = 'C{}'.format(i))        
+        ax.plot(wavs_window, scale * (sl.signals[ii, :]-1 ) + 1 + 0.1 * i, color = 'C{}'.format(i))
 
-        ax.plot(wavs_window, model_signals[ii, :] + 0.1 * i, color = 'C{}'.format(i))        
-        ax.plot(wavs_window, sl.signals[ii, :]+ 0.1 * i, color = 'C{}'.format(i))
+        write_distances= True
+        if write_distances:
+            ax.text(15272 + 4,  1 + 0.1 * i + 0.05, 
+                    "{:.0f} pc".format(sl.stars['DIST'][ii]), color = 'C{}'.format(i), fontsize = 25)
         for k in range(50):
-            ax.plot(wavs_window, sample_signal()[ii, :] + 0.1 * i, color = 'C{}'.format(i), alpha = 0.05)
-        ax.set_xlabel('Wavelength ($\AA$)')
-        ax.set_ylabel('Flux + Offset')
+            ax.plot(wavs_window, scale * (sample_signal()[ii, :]-1 ) + 1 + 0.1 * i, color = 'C{}'.format(i), alpha = 0.05)
+
+
+    ax.set_xlim(15272-10, 15272 + 10)
+    ax.set_xticks(np.arange(15272-10, 15272+11, 4))
+    ax.set_xticklabels(np.arange(15272-10, 15272+11, 4), fontsize = 30)
+    ax.set_xlabel('Wavelength ($\AA$)', fontsize = 35)
+    ax.set_ylabel('Flux + Offset', fontsize = 35)
+
+    ax.set_yticks(np.arange(1, 1 + 0.1 * len(sl.stars), 0.4))
+    ax.set_yticklabels((10 * (ax.get_yticks() - 1)).round(), fontsize = 30)
+
     return fig, ax
 
 
